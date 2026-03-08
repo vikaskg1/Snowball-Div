@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Fixed CSP to allow OneSignal subdomains and Wealthica assets -->
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: *.wealthica.com wealthica.com https://addons.wealthica.com https://connect.vezgo.com connect.wealthica.com cognito-idp.us-east-1.amazonaws.com cognito-idp.ca-central-1.amazonaws.com api-js.mixpanel.com wss://ws-mt1.pusher.com sockjs.pusher.com api.recurly.com *.google-analytics.com *.onesignal.com onesignal.com *.wisepops.com *.doubleclick.net sessions.bugsnag.com app.getwisp.co desk.wealthica.com stockchase.com *.google.com *.google.ae *.google.ca;">
     <title>Snowball-Div</title>
     <script src="bridge.js"></script>
     <style>
@@ -51,7 +53,6 @@
             return;
         }
 
-        // UNIVERSAL HANDSHAKE: Works whether it's a class or an instance
         let addon;
         try {
             addon = (typeof W === 'function') ? new W() : W;
@@ -86,7 +87,6 @@
             });
         } catch (e) {
             console.log("Handshake Error: Using backup method...");
-            // Final fallback if the above failed
             if (W.on) {
                  W.on('ready', () => { location.reload(); });
             }
