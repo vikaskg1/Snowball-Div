@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- Wealthica SDK -->
+    <!-- ONLY Wealthica and Chart.js are allowed by CSP -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
@@ -47,13 +47,14 @@
 </div>
 
 <script>
-    // Wait for the window and external scripts to load completely
+    // 1. Wait for window to load to ensure Wealthica is defined
     window.onload = function() {
         if (typeof Wealthica !== "undefined") {
             const addon = new Wealthica();
             
             addon.on('ready', async (data) => {
                 try {
+                    // Fetch real dividend data
                     const txs = await addon.api.getTransactions({ limit: 1000 });
                     const divs = {};
                     let total = 0;
@@ -76,15 +77,15 @@
                     
                     document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
                     renderChart(txs);
-                } catch (e) { console.error("Data fetch error:", e); }
+                } catch (e) { console.error("API Error:", e); }
             });
         } else {
-            console.error("Wealthica library failed to load.");
+            console.error("Wealthica SDK failed to load. Check your internet or CSP.");
         }
     };
 
     function renderChart(txs) {
-        const years = [2021, 2022, 2023, 2024];
+        const years = [2020, 2021, 2022, 2023, 2024];
         const data = years.map(y => txs.filter(t => new Date(t.date).getFullYear() === y && ['dividend','distribution'].includes(t.type))
             .reduce((sum, t) => sum + Math.abs(t.amount), 0));
 
