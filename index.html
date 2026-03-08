@@ -1,26 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hello World Power-Up</title>
-    <!-- Include the Wealthica JS library -->
-    <script src="https://unpkg.com/wealthica-sdk-js/dist/wealthica.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; color: #333; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9f9f9; }
+        #status { color: #888; font-style: italic; }
+    </style>
 </head>
 <body>
-    <h1>Hello World!</h1>
-    <p id="user-info">Loading user data...</p>
+
+    <div class="card">
+        <h1>Hello Wealthica!</h1>
+        <p id="status">Waiting for Wealthica SDK...</p>
+        <p id="user-info"></p>
+    </div>
+
+    <!-- Correct Power-Up SDK for Add-ons -->
+    <script src="https://wealthica.github.io"></script>
 
     <script>
-        // Initialize the Power-Up
-        const addon = new Wealthica();
+        // Ensure the script runs after the library is loaded
+        window.onload = function() {
+            if (typeof Wealthica !== 'undefined') {
+                try {
+                    // Initialize the Power-Up
+                    const addon = new Wealthica();
 
-        addon.on('ready', (data) => {
-            // "data" contains information about the current user
-            const userName = data.user.name || "Wealthica User";
-            document.getElementById('user-info').innerText = `Hello, ${userName}! Your Power-Up is ready.`;
-            
-            // You can now use addon.api.get() to fetch balances, assets, etc.
-            console.log("Power-Up initialized with data:", data);
-        });
+                    addon.on('ready', function(data) {
+                        document.getElementById('status').innerText = "SDK Ready!";
+                        
+                        // Display user name from the ready data
+                        const name = data.user.name || "Wealthica User";
+                        document.getElementById('user-info').innerHTML = 
+                            `Welcome, <strong>${name}</strong>! Your first Power-Up is running.`;
+                        
+                        console.log("Wealthica data received:", data);
+                    });
+                } catch (err) {
+                    document.getElementById('status').innerText = "Initialization error: " + err.message;
+                    console.error(err);
+                }
+            } else {
+                document.getElementById('status').innerText = "Error: Wealthica SDK not found.";
+            }
+        };
     </script>
 </body>
 </html>
