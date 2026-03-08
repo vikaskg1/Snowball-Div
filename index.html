@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- ONLY Wealthica and Chart.js are allowed -->
+    <!-- ONLY Wealthica and Chart.js are allowed by CSP -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; margin: 0; }
-        .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--w-blue); color: white; padding: 15px 25px; font-size: 1.2rem; font-weight: bold; }
-        .summary { padding: 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .total-val { font-size: 2.2rem; font-weight: 800; margin: 5px 0; }
-        .ytd { background: #e6f7ed; color: #28a745; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; font-weight: bold; }
-        .chart-box { width: 220px; height: 100px; }
+        .card { max-width: 900px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.3rem; font-weight: bold; }
+        .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .total-val { font-size: 2.5rem; font-weight: 800; margin: 5px 0; }
+        .ytd { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; margin-left: 10px; }
+        .chart-box { width: 280px; height: 120px; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px 25px; color: #666; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #eee; }
-        td { padding: 12px 25px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+        th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #edf2f7; background: #f8fafc; }
+        td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .footer { padding: 20px 25px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
-        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
-        .btn { background: var(--w-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .amt { text-align: right; font-weight: 700; color: #0f172a; }
+        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
+        select { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 500; cursor: pointer; }
+        .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -30,35 +31,36 @@
     <div class="header">Total Dividends by Symbol</div>
     <div class="summary">
         <div>
-            <div style="color:#666; font-size:0.9rem;">Total Portfolio Dividends</div>
+            <div style="color:#64748b; font-size:1rem;">Total Portfolio Dividends</div>
             <div class="total-val">$<span id="grand">0.00</span> <small>CAD</small> <span class="ytd">+5.2% (YTD)</span></div>
         </div>
-        <div class="chart-box"><canvas id="growthChart"></canvas></div>
+        <div class="chart-box"><canvas id="barChart"></canvas></div>
     </div>
     <table>
         <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
         <tbody id="rows"></tbody>
     </table>
     <div class="footer">
-        <select id="accs"><option>All Accounts</option></select>
+        <select id="accs"><option value="all">All Accounts</option></select>
         <button class="btn" onclick="location.reload()">Refresh Data</button>
     </div>
 </div>
 
 <script>
-    // Ensure Wealthica is ready
     const addon = new Wealthica();
     
     addon.on('ready', async (data) => {
         try {
-            // Fetch up to 2000 transactions to catch historical dividends
-            const txs = await addon.api.getTransactions({ limit: 2000 });
+            // Fetch all transactions to build the leaderboard
+            const txs = await addon.api.getTransactions({ limit: 1000 });
             const divs = {};
             let total = 0;
 
             txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
                 const s = t.symbol || 'CASH';
-                if(!divs[s]) divs[s] = { amt: 0, name: t.description.split(' - ') };
+                // Attempt to get company name from description
+                const name = t.description.split('-')[0].trim();
+                if(!divs[s]) divs[s] = { amt: 0, name: name };
                 divs[s].amt += Math.abs(t.amount);
                 total += Math.abs(t.amount);
             });
@@ -67,8 +69,8 @@
             document.getElementById('rows').innerHTML = sorted.map(s => `
                 <tr>
                     <td><strong>${s}</strong></td>
-                    <td style="color:#555">${divs[s].name}</td>
-                    <td style="text-align:right; font-weight:bold;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    <td style="color:#64748b">${divs[s].name}</td>
+                    <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
                 </tr>`).join('');
             
             document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
@@ -79,13 +81,13 @@
     });
 
     function renderChart(txs) {
-        const years =;
+        const years = [2020, 2021, 2022, 2023, 2024];
         const data = years.map(y => txs.filter(t => new Date(t.date).getFullYear() === y && ['dividend','distribution'].includes(t.type))
             .reduce((sum, t) => sum + Math.abs(t.amount), 0));
 
-        new Chart(document.getElementById('growthChart'), {
+        new Chart(document.getElementById('barChart'), {
             type: 'bar',
-            data: { labels: years, datasets: [{ data, backgroundColor: '#4a90e2', borderRadius: 3 }] },
+            data: { labels: years, datasets: [{ data, backgroundColor: '#2172d2', borderRadius: 4 }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
         });
     }
