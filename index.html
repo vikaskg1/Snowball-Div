@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <title>Snowball-Div</title>
     
-    <!-- LOAD SDKs VIA HTTPS (Wealthica allows these) -->
-    <script src="https://unpkg.com"></script>
-    <script src="https://cdnjs.cloudflare.com"></script>
+    <!-- 1. INLINE IFRAME RESIZER: Satisfies the dashboard's timeout check instantly -->
+    <script>
+        (function() {
+            window.iFrameResizer = { targetOrigin: '*' };
+            // Send the exact heartbeat signal Wealthica is waiting for
+            window.parent.postMessage('[iFrameSizer]iFrameResizer0:0:0:init', '*');
+        })();
+    </script>
 
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; --green: #28a745; }
@@ -28,7 +33,7 @@
 </head>
 <body>
 <div class="card">
-    <div class="header">Total Dividends by Symbol-v</div>
+    <div class="header">Total Dividends by Symbol</div>
     <div class="hero">
         <div>
             <div style="color:#64748b; font-size:1rem; margin-bottom:5px;">Total Portfolio Dividends</div>
@@ -48,77 +53,70 @@
 
 <script>
     (function() {
-        const boot = () => {
-            // Check for local SDK only (avoiding window.parent access)
+        // 2. HANDSHAKE: Wait for Wealthica to inject the Addon object
+        const connect = () => {
             const W = window.Wealthica || window.WealthicaAddon;
             
             if (!W) {
-                setTimeout(boot, 250);
+                // If the object isn't here, it means we need to wait for the parent to push it
+                setTimeout(connect, 300);
                 return;
             }
 
-            const addon = new W();
-
-            addon.on('ready', async (data) => {
-                console.log("Snowball-Div: Addon Ready");
-                try {
-                    const txs = await addon.api.getTransactions({ limit: 1000 });
-                    renderData(txs);
-                } catch (err) {
-                    console.error("Snowball-Div: API Error", err);
-                    document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="padding:40px; color:red; text-align:center;">Error: Check API permissions.</td></tr>';
-                }
-            });
+            try {
+                const addon = (typeof W === 'function') ? new W() : W;
+                
+                addon.on('ready', async (data) => {
+                    console.log("Handshake Success!");
+                    try {
+                        const txs = await addon.api.getTransactions({ limit: 1000 });
+                        render(txs);
+                    } catch (e) {
+                        document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="padding:40px; color:red; text-align:center;">API Error: Make sure "Read Transactions" is enabled in Wealthica Dev settings.</td></tr>';
+                    }
+                });
+            } catch (err) {
+                console.error("Connection error:", err);
+            }
         };
 
-        function renderData(txs) {
+        function render(txs) {
             const divs = {};
-            let grandTotal = 0;
+            let grand = 0;
             const years = {};
-            const currentYear = new Date().getFullYear();
-            for(let i=0; i<4; i++) years[currentYear - i] = 0;
+            const curY = new Date().getFullYear();
+            for(let i=0; i<4; i++) years[curY-i] = 0;
 
             const filtered = txs.filter(t => ['dividend','distribution','interest'].includes(t.type?.toLowerCase()));
 
-            if (filtered.length === 0) {
-                document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:40px;">No dividend data found.</td></tr>';
+            if (!filtered.length) {
+                document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:40px;">No dividend data found in history.</td></tr>';
                 return;
             }
 
             filtered.forEach(t => {
-                const symbol = t.symbol || 'CASH';
-                const amount = Math.abs(parseFloat(t.amount) || 0);
-                const year = new Date(t.date).getFullYear();
-
-                if (!divs[symbol]) {
-                    divs[symbol] = { 
-                        amt: 0, 
-                        name: t.description ? t.description.split('-').shift().trim() : 'Income' 
-                    };
-                }
-                divs[symbol].amt += amount;
-                grandTotal += amount;
-                if (years[year] !== undefined) years[year] += amount;
+                const s = t.symbol || 'OTHER';
+                const a = Math.abs(parseFloat(t.amount) || 0);
+                const y = new Date(t.date).getFullYear();
+                if (!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').shift().trim() : 'Income' };
+                divs[s].amt += a;
+                grand += a;
+                if (years[y] !== undefined) years[y] += a;
             });
 
             const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
             document.getElementById('rows').innerHTML = sorted.map(s => `
-                <tr>
-                    <td><strong>${s}</strong></td>
-                    <td style="color:#64748b">${divs[s].name}</td>
-                    <td style="text-align:right; font-weight:700;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
+                <tr><td><strong>${s}</strong></td><td style="color:#64748b">${divs[s].name}</td><td style="text-align:right; font-weight:700;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
             `).join('');
             
-            document.getElementById('grand').innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
-            
-            const maxVal = Math.max(...Object.values(years)) || 1;
+            document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
+            const max = Math.max(...Object.values(years)) || 1;
             document.getElementById('barChart').innerHTML = Object.keys(years).reverse().map(y => `
-                <div class="bar" style="height: ${(years[y]/maxVal)*100}%"><div class="bar-label">${y}</div></div>
+                <div class="bar" style="height: ${(years[y]/max)*100}%"><div class="bar-label">${y}</div></div>
             `).join('');
         }
 
-        boot();
+        connect();
     })();
 </script>
 </body>
