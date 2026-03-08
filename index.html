@@ -3,34 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- ONLY Wealthica SDK - No other external scripts allowed by CSP -->
+    <!-- 1. The ONLY external scripts allowed -->
     <script src="https://wealthica.github.io"></script>
     <style>
-        :root { --w-blue: #1b6ec2; --bg: #f0f2f5; --green: #28a745; --light-blue: #f9fbff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
+        :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
         .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.35rem; font-weight: bold; }
-        
-        /* Summary Section */
-        .summary-row { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .total-val { font-size: 2.6rem; font-weight: 800; display: flex; align-items: center; gap: 15px; margin: 5px 0; }
-        .badge { background: #e6f7ed; color: var(--green); padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
-        
-        /* CSS-Only Bar Chart (Zero dependencies to avoid CSP blocks) */
-        .chart-box { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding-bottom: 20px; }
-        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; position: relative; opacity: 0.8; transition: height 0.5s; }
-        .bar-label { position: absolute; bottom: -20px; left: -5px; width: 35px; font-size: 10px; text-align: center; color: #888; }
-
-        /* Table Section */
+        .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .total-val { font-size: 2.6rem; font-weight: 800; display: flex; align-items: center; gap: 15px; }
+        .badge { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
+        .chart-box { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
+        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #edf2f7; background: #fcfcfc; }
+        th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; background: #fcfcfc; border-bottom: 2px solid #edf2f7; }
         td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
-        tr:nth-child(even) { background: var(--light-blue); }
-        .amt { text-align: right; font-weight: 600; }
-
-        /* Footer */
-        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
-        select { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; background: #fff; }
+        tr:nth-child(even) { background: #f9fbff; }
+        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; }
         .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -38,37 +27,36 @@
 
 <div class="card">
     <div class="header">Total Dividends by Symbol</div>
-    <div class="summary-row">
+    <div class="summary">
         <div>
             <div style="color:#64748b; font-size:0.95rem;">Total Portfolio Dividends</div>
-            <div class="total-val">$<span id="grandTotal">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
+            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
         </div>
-        <div class="chart-box" id="barChart"></div>
+        <div class="chart-box" id="chart"></div>
     </div>
     <table>
         <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding: 50px;">Calculating dividends...</td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Waiting for Wealthica connection...</td></tr></tbody>
     </table>
     <div class="footer">
-        <select id="accountFilter"><option>All Accounts</option></select>
+        <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
         <button class="btn" onclick="location.reload(true)">Refresh Data</button>
     </div>
 </div>
 
 <script>
-    // FAIL-SAFE: Check for the Wealthica library every 100ms
-    const checkLibrary = setInterval(() => {
-        if (typeof Wealthica !== "undefined") {
-            clearInterval(checkLibrary);
-            startApp();
-        }
-    }, 100);
-
+    // 2. RECURSIVE LOADER: Fixes "Wealthica is not defined"
     function startApp() {
+        if (typeof Wealthica === 'undefined') {
+            console.log("SDK not ready, retrying...");
+            setTimeout(startApp, 200);
+            return;
+        }
+
         const addon = new Wealthica();
-        
         addon.on('ready', async (data) => {
             try {
+                // Fetch last 1000 transactions
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
                 let grand = 0;
@@ -85,26 +73,28 @@
                     if(years[y] !== undefined) years[y] += a;
                 });
 
+                // Update Table
                 const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
                 document.getElementById('rows').innerHTML = sorted.map(s => `
-                    <tr>
-                        <td><strong>${s}</strong></td>
-                        <td style="color:#64748b">${divs[s].name}</td>
-                        <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    </tr>`).join('');
+                    <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                `).join('');
                 
-                document.getElementById('grandTotal').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
-                const maxVal = Math.max(...Object.values(years)) || 1;
-                document.getElementById('barChart').innerHTML = Object.keys(years).map(y => `
-                    <div class="bar" style="height: ${(years[y]/maxVal)*100}%"><div class="bar-label">${y}</div></div>
+                // Build Chart Bars
+                const max = Math.max(...Object.values(years)) || 1;
+                document.getElementById('chart').innerHTML = Object.keys(years).map(y => `
+                    <div class="bar" style="height: ${(years[y]/max)*100}%"></div>
                 `).join('');
 
-            } catch (err) {
-                document.getElementById('rows').innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Error loading transactions.</td></tr>`;
+            } catch (e) {
+                document.getElementById('rows').innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Sync Error. Please Refresh.</td></tr>`;
             }
         });
     }
+
+    // Initialize the check
+    startApp();
 </script>
 </body>
 </html>
