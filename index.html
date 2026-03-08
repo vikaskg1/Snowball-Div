@@ -37,32 +37,24 @@ h1{
 </div>
 
 <script>
-
 function waitForAddon(){
-
-  if(window.addon){
-
+  if(window.addon && window.addon.on){
+    // Addon API is ready
     window.addon.on("ready", function(data){
-
       console.log("Wealthica ready", data);
-
       document.getElementById("status").innerText =
         "Connected to Wealthica successfully";
-
     });
-
-  }
-  else{
-
+  } else {
+    // Retry after short delay until Wealthica container is ready
+    setTimeout(waitForAddon, 200);
     document.getElementById("status").innerText =
-      "Running outside Wealthica container";
-
+      "Waiting for Wealthica container...";
   }
-
 }
 
+// Start detection
 waitForAddon();
-
 </script>
 
 </body>
