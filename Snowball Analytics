@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://wealthica.github.io"></script>
+    <script src="https://cdn.jsdelivr.net"></script>
+    <style>
+        :root { --wealthica-blue: #2172d2; --bg-gray: #f8fafc; --text-dark: #1e293b; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg-gray); padding: 40px; color: var(--text-dark); }
+        .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: var(--wealthica-blue); color: white; padding: 15px 25px; font-size: 1.25rem; font-weight: 600; }
+        .summary-box { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .total-title { font-size: 0.9rem; color: #64748b; margin-bottom: 8px; }
+        .total-amount { font-size: 2.2rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .ytd-badge { background: #e6f7ed; color: #15803d; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+        .chart-area { width: 300px; height: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { text-align: left; padding: 12px 40px; background: #fcfcfc; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.85rem; text-transform: uppercase; }
+        td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .amount-col { text-align: right; font-weight: 700; font-family: 'Roboto Mono', monospace; }
+        .footer { padding: 20px 40px; display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; background: white; }
+        .btn-refresh { background: var(--wealthica-blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        select { padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: 150px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">Total Dividends by Symbol</div>
+    
+    <div class="summary-box">
+        <div>
+            <div class="total-title">Total Portfolio Dividends</div>
+            <div class="total-amount">
+                $<span id="grandTotal">0.00</span> CAD 
+                <span class="ytd-badge">+5.2% (YTD)</span>
+            </div>
+        </div>
+        <div class="chart-area"><canvas id="growthChart"></canvas></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Symbol</th><th>Company</th><th class="amount-col">Total Earned (CAD)</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="footer">
+        <select id="accountDropdown"><option value="all">All Accounts</option></select>
+        <button class="btn-refresh" onclick="location.reload()">Refresh Data</button>
+    </div>
+</div>
+
+<script>
+    const addon = new Wealthica();
+    
+    addon.on('ready', async (data) => {
+        const transactions = await addon.api.getTransactions({ limit: 5000 });
+        const accounts = await addon.api.getAccounts();
+        
+        // Setup Account Dropdown
+        accounts.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a._id; opt.innerText = a.label;
+            document.getElementById('accountDropdown').appendChild(opt);
+        });
+
+        processData(transactions);
+        initChart(transactions);
+    });
+
+    function processData(txs) {
+        const totals = {};
+        let grand = 0;
+
+        txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
+            const sym = t.symbol || 'OTHER';
+            if(!totals[sym]) totals[sym] = { amount: 0, name: t.description.split('-')[0].trim() };
+            totals[sym].amount += Math.abs(t.amount);
+            grand += Math.abs(t.amount);
+        });
+
+        const tbody = document.getElementById('tableBody');
+        Object.keys(totals).sort((a,b) => totals[b].amount - totals[a].amount).forEach(s => {
+            tbody.innerHTML += `<tr>
+                <td><strong>${s}</strong></td>
+                <td style="color:#64748b">${totals[s].name}</td>
+                <td class="amount-col">$${totals[s].amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            </tr>`;
+        });
+        document.getElementById('grandTotal').innerText = grand.toLocaleString();
+    }
+
+    function initChart(txs) {
+        // Logic to group dividends by year (2020-2024)
+        const years = [2020, 2021, 2022, 2023, 2024];
+        const yearlyData = years.map(y => {
+            return txs.filter(t => new Date(t.date).getFullYear() === y && ['dividend','distribution'].includes(t.type))
+                      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        });
+
+        new Chart(document.getElementById('growthChart'), {
+            type: 'bar',
+            data: { labels: years, datasets: [{ data: yearlyData, backgroundColor: '#4a90e2', borderRadius: 4 }] },
+            options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
+        });
+    }
+</script>
+
+</body>
+</html>
