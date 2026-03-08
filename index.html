@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- ONLY whitelisted scripts allowed by Wealthica CSP -->
+    <!-- Use ONLY these two whitelisted scripts -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
@@ -47,42 +47,45 @@
 </div>
 
 <script>
-    // 1. Wait for window load to ensure Wealthica is defined
-    window.onload = function() {
+    // Fail-safe: Wait for the library to be defined
+    var checkWealthica = setInterval(function() {
         if (typeof Wealthica !== "undefined") {
-            const addon = new Wealthica();
-            
-            addon.on('ready', async (data) => {
-                try {
-                    // Fetch real transaction history
-                    const txs = await addon.api.getTransactions({ limit: 1000 });
-                    const divs = {};
-                    let total = 0;
-
-                    txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-                        const s = t.symbol || 'CASH';
-                        const name = t.description ? t.description.split('-')[0].trim() : 'Unknown';
-                        if(!divs[s]) divs[s] = { amt: 0, name: name };
-                        divs[s].amt += Math.abs(parseFloat(t.amount) || 0);
-                        total += Math.abs(parseFloat(t.amount) || 0);
-                    });
-
-                    const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
-                    document.getElementById('rows').innerHTML = sorted.map(s => `
-                        <tr>
-                            <td><strong>${s}</strong></td>
-                            <td style="color:#64748b">${divs[s].name}</td>
-                            <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                        </tr>`).join('');
-                    
-                    document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
-                    renderChart(txs);
-                } catch (e) { console.error("Wealthica API Error:", e); }
-            });
-        } else {
-            console.error("Wealthica SDK failed to load. Check for CSP blocks.");
+            clearInterval(checkWealthica);
+            initAddon();
         }
-    };
+    }, 100);
+
+    function initAddon() {
+        const addon = new Wealthica();
+        
+        addon.on('ready', async (data) => {
+            try {
+                // Fetch up to 1000 transactions
+                const txs = await addon.api.getTransactions({ limit: 1000 });
+                const divs = {};
+                let total = 0;
+
+                txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
+                    const s = t.symbol || 'CASH';
+                    const name = t.description ? t.description.split('-')[0].trim() : 'Unknown';
+                    if(!divs[s]) divs[s] = { amt: 0, name: name };
+                    divs[s].amt += Math.abs(parseFloat(t.amount) || 0);
+                    total += Math.abs(parseFloat(t.amount) || 0);
+                });
+
+                const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
+                document.getElementById('rows').innerHTML = sorted.map(s => `
+                    <tr>
+                        <td><strong>${s}</strong></td>
+                        <td style="color:#64748b">${divs[s].name}</td>
+                        <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    </tr>`).join('');
+                
+                document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
+                renderChart(txs);
+            } catch (e) { console.error("Wealthica API Error:", e); }
+        });
+    }
 
     function renderChart(txs) {
         const years = [2020, 2021, 2022, 2023, 2024];
