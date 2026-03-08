@@ -3,27 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- Use YOUR local file to stop the "not defined" error -->
+    <!-- Use YOUR local file from your repo -->
     <script src="wealthica.js"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
         .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.35rem; font-weight: bold; }
+        
+        /* Summary Section */
         .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
         .total-val { font-size: 2.6rem; font-weight: 800; display: flex; align-items: center; gap: 15px; margin: 5px 0; }
         .ytd { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
         
-        /* Pure CSS Bar Chart (Zero dependencies) */
+        /* CSS Bar Chart (Zero Dependencies) */
         .chart-box { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding-bottom: 20px; }
-        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; position: relative; opacity: 0.8; }
+        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; position: relative; opacity: 0.8; transition: height 0.5s; }
         .bar-label { position: absolute; bottom: -20px; left: -5px; width: 35px; font-size: 10px; color: #888; text-align: center; }
 
+        /* Leaderboard Table */
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; background: #fcfcfc; border-bottom: 2px solid #edf2f7; text-transform: uppercase; }
         td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        
+        .amt { text-align: right; font-weight: 600; }
+
+        /* Footer */
         .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
         .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
@@ -50,13 +55,14 @@
 </div>
 
 <script>
+    // THE FIX: Loop until we find the constructor (handles slow loads)
     function startApp() {
-        // DETECT: Checks for window.Wealthica (standard) or window.WealthicaAddon (legacy)
-        var W = window.Wealthica || window.WealthicaAddon;
+        // Detect either 'Wealthica' or 'WealthicaAddon'
+        const W = window.Wealthica || window.WealthicaAddon;
         
         if (!W) {
-            console.warn("Searching for local Wealthica library...");
-            setTimeout(startApp, 250);
+            console.log("Searching for constructor...");
+            setTimeout(startApp, 100);
             return;
         }
 
@@ -66,33 +72,35 @@
             addon.on('ready', async (data) => {
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
-                let grand = 0;
-                const years = { '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
+                let grandTotal = 0;
+                const years = { '2020': 0, '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
 
                 txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-                    const s = t.symbol || 'OTHER';
+                    const sym = t.symbol || 'CASH';
                     const y = new Date(t.date).getFullYear();
                     const a = Math.abs(parseFloat(t.amount) || 0);
 
-                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').trim() : 'Unknown' };
-                    divs[s].amt += a;
-                    grand += a;
+                    if(!divs[sym]) divs[sym] = { amt: 0, name: t.description ? t.description.split('-').trim() : 'Unknown' };
+                    divs[sym].amt += a;
+                    grandTotal += a;
                     if(years[y] !== undefined) years[y] += a;
                 });
 
+                // Populate Table
                 const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
                 document.getElementById('rows').innerHTML = sorted.map(s => `
-                    <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                    <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
                 `).join('');
                 
-                document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('grand').innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
+                // Build Chart
                 const max = Math.max(...Object.values(years)) || 1;
                 document.getElementById('barChart').innerHTML = Object.keys(years).map(y => `
                     <div class="bar" style="height: ${(years[y]/max)*100}%"><div class="bar-label">${y}</div></div>
                 `).join('');
             });
-        } catch (e) { console.error("Constructor Error:", e); }
+        } catch (err) { console.error("Constructor failed:", err); }
     }
 
     startApp();
