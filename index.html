@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Snowball-Div</title>
-    <!-- Relative path to your local library file -->
-    <script src="wealthica.js"></script>
+    <!-- Use the new filename to bypass ad-blockers -->
+    <script src="./bridge.js"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
@@ -19,7 +19,7 @@
         th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; background: #fcfcfc; border-bottom: 2px solid #edf2f7; text-transform: uppercase; }
         td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
+        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; }
         .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -36,7 +36,7 @@
     </div>
     <table>
         <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Connecting Snowball-Div...</td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Handshaking Snowball-Div...</td></tr></tbody>
     </table>
     <div class="footer">
         <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
@@ -45,53 +45,51 @@
 </div>
 
 <script>
-    // Recursive check for the SDK to fix the "Wealthica is not defined" error
-    (function startApp() {
-        const W = window.Wealthica || window.WealthicaAddon;
+    // Force wait for library
+    function start() {
+        // Try all possible names for the library constructor
+        const W = window.Wealthica || window.WealthicaAddon || window.WealthicaSDK;
         
         if (!W) {
-            console.log("Snowball-Div: Searching for SDK...");
-            setTimeout(startApp, 250);
+            setTimeout(start, 200);
             return;
         }
 
         const addon = new W();
         addon.on('ready', async (data) => {
             try {
-                // Fetch last 1000 transactions
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
-                let grandTotal = 0;
+                let grand = 0;
                 const years = { '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
 
-                txs.filter(t => ['dividend','distribution','interest'].includes(t.type)).forEach(t => {
+                txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
                     const s = t.symbol || 'OTHER';
                     const y = new Date(t.date).getFullYear();
                     const a = Math.abs(parseFloat(t.amount) || 0);
 
-                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').shift().trim() : 'Income' };
+                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-')[0].trim() : 'Income' };
                     divs[s].amt += a;
-                    grandTotal += a;
+                    grand += a;
                     if(years[y] !== undefined) years[y] += a;
                 });
 
-                // Update Table
                 const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
                 document.getElementById('rows').innerHTML = sorted.map(s => `
                     <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
                 `).join('');
                 
-                document.getElementById('grand').innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
-                // Update Bars
                 const max = Math.max(...Object.values(years)) || 1;
                 document.getElementById('chart-container').innerHTML = Object.keys(years).map(y => `
                     <div class="bar" style="height: ${(years[y]/max)*100}%" title="${y}"></div>
                 `).join('');
 
-            } catch (e) { console.error("Snowball-Div Sync Error", e); }
+            } catch (e) { console.error("Sync Error", e); }
         });
-    })();
+    }
+    start();
 </script>
 </body>
 </html>
