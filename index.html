@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- Use ONLY these two whitelisted scripts -->
+    <!-- ONLY Wealthica and Chart.js are allowed by CSP -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; margin: 0; overflow-x: hidden; }
         .card { max-width: 900px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.3rem; font-weight: bold; }
         .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
@@ -47,20 +47,20 @@
 </div>
 
 <script>
-    // Fail-safe: Wait for the library to be defined
-    var checkWealthica = setInterval(function() {
+    // Fail-safe: Wait for the library to be defined before running
+    var checkLibrary = setInterval(function() {
         if (typeof Wealthica !== "undefined") {
-            clearInterval(checkWealthica);
-            initAddon();
+            clearInterval(checkLibrary);
+            startPowerUp();
         }
     }, 100);
 
-    function initAddon() {
+    function startPowerUp() {
         const addon = new Wealthica();
         
         addon.on('ready', async (data) => {
             try {
-                // Fetch up to 1000 transactions
+                // Fetch real transactions (limit 1000 for speed)
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
                 let total = 0;
