@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- ONLY Wealthica and Chart.js are allowed -->
+    <!-- Wealthica SDK -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 30px; margin: 0; }
-        .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        .card { max-width: 900px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.3rem; font-weight: bold; }
         .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
         .total-val { font-size: 2.5rem; font-weight: 800; margin: 5px 0; display: flex; align-items: center; gap: 15px; }
@@ -47,45 +47,50 @@
 </div>
 
 <script>
-    const addon = new Wealthica();
-    
-    addon.on('ready', async (data) => {
-        try {
-            // Fetch transactions to process dividends
-            const txs = await addon.api.getTransactions({ limit: 1000 });
-            const divs = {};
-            let total = 0;
-
-            txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-                const s = t.symbol || 'CASH';
-                // Attempt to clean up company name from description
-                const name = t.description ? t.description.split('-')[0].trim() : 'Unknown';
-                if(!divs[s]) divs[s] = { amt: 0, name: name };
-                divs[s].amt += Math.abs(t.amount);
-                total += Math.abs(t.amount);
-            });
-
-            const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
-            document.getElementById('rows').innerHTML = sorted.map(s => `
-                <tr>
-                    <td><strong>${s}</strong></td>
-                    <td style="color:#64748b">${divs[s].name}</td>
-                    <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                </tr>`).join('');
+    // Wait for the window and external scripts to load completely
+    window.onload = function() {
+        if (typeof Wealthica !== "undefined") {
+            const addon = new Wealthica();
             
-            document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
-            renderChart(txs);
-        } catch (e) { console.error("Wealthica Error:", e); }
-    });
+            addon.on('ready', async (data) => {
+                try {
+                    const txs = await addon.api.getTransactions({ limit: 1000 });
+                    const divs = {};
+                    let total = 0;
+
+                    txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
+                        const s = t.symbol || 'CASH';
+                        const name = t.description ? t.description.split('-')[0].trim() : 'Unknown';
+                        if(!divs[s]) divs[s] = { amt: 0, name: name };
+                        divs[s].amt += Math.abs(t.amount);
+                        total += Math.abs(t.amount);
+                    });
+
+                    const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
+                    document.getElementById('rows').innerHTML = sorted.map(s => `
+                        <tr>
+                            <td><strong>${s}</strong></td>
+                            <td style="color:#64748b">${divs[s].name}</td>
+                            <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        </tr>`).join('');
+                    
+                    document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
+                    renderChart(txs);
+                } catch (e) { console.error("Data fetch error:", e); }
+            });
+        } else {
+            console.error("Wealthica library failed to load.");
+        }
+    };
 
     function renderChart(txs) {
-        const years = [2020, 2021, 2022, 2023, 2024];
+        const years = [2021, 2022, 2023, 2024];
         const data = years.map(y => txs.filter(t => new Date(t.date).getFullYear() === y && ['dividend','distribution'].includes(t.type))
             .reduce((sum, t) => sum + Math.abs(t.amount), 0));
 
         new Chart(document.getElementById('barChart'), {
             type: 'bar',
-            data: { labels: years, datasets: [{ data, backgroundColor: '#4a90e2', borderRadius: 4 }] },
+            data: { labels: years, datasets: [{ data, backgroundColor: '#2172d2', borderRadius: 4 }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
         });
     }
