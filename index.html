@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Snowball-Div</title>
     <!-- Relative path to your local bridge file -->
+    <script src="bridge.js"></script>
     <script type="text/javascript" src="/assets/config.js"></script>
     <script type="text/javascript" src="/assets/wealthica.js"></script>
     <style>
@@ -11,29 +12,18 @@
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
         .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.4rem; font-weight: bold; }
-        
-        /* Hero Section */
         .hero { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .total-label { color: #64748b; font-size: 1rem; margin-bottom: 5px; }
         .total-val { font-size: 2.8rem; font-weight: 800; display: flex; align-items: center; gap: 15px; }
         .badge { background: #e6f7ed; color: var(--green); padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
-        
-        /* Bar Chart */
         .chart-box { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
         .bar { width: 24px; background: #5a96d4; border-radius: 4px 4px 0 0; position: relative; opacity: 0.85; }
         .bar-label { position: absolute; bottom: -22px; left: -5px; width: 35px; font-size: 10px; text-align: center; color: #888; }
-
-        /* Table */
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #edf2f7; background: #fcfcfc; }
         td { padding: 15px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1.05rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .amt { text-align: right; font-weight: 700; color: #1e293b; }
-
-        /* Footer */
         .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
-        select { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; background: #fff; cursor: pointer; }
-        .btn { background: var(--w-blue); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .btn { background: var(--w-blue); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -42,38 +32,37 @@
     <div class="header">Total Dividends by Symbol</div>
     <div class="hero">
         <div>
-            <div class="total-label">Total Portfolio Dividends</div>
+            <div style="color:#64748b; font-size:1rem; margin-bottom:5px;">Total Portfolio Dividends</div>
             <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.5rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
         </div>
         <div class="chart-box" id="barChart"></div>
     </div>
     <table>
-        <thead>
-            <tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr>
-        </thead>
-        <tbody id="rows">
-            <tr><td colspan="3" style="text-align:center; padding: 60px; color: #64748b;">Connecting to Portfolio...</td></tr>
-        </tbody>
+        <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding: 60px;">Syncing with Wealthica...</td></tr></tbody>
     </table>
     <div class="footer">
-        <select><option>All Accounts</option></select>
+        <select id="accFilter"><option>All Accounts</option></select>
         <button class="btn" onclick="location.reload(true)">Refresh Data</button>
     </div>
 </div>
 
 <script>
-    // Self-starting detector to ensure 'Wealthica' class is ready
-    (function init() {
-        const W = window.Wealthica || window.WealthicaAddon;
-        if (!W) {
-            setTimeout(init, 200);
+    // FIX: Detect the constructor properly to avoid "W is not a constructor"
+    function boot() {
+        // Look for Wealthica in all possible places the SDK might attach it
+        const WealthicaClass = window.Wealthica || (window.module && window.module.exports) || window.WealthicaAddon;
+
+        if (typeof WealthicaClass !== 'function' && typeof WealthicaClass !== 'object') {
+            console.log("SDK not yet a constructor, retrying...");
+            setTimeout(boot, 200);
             return;
         }
 
-        const addon = new W();
-        addon.on('ready', async (data) => {
-            try {
-                // Fetch Transaction history (Limit 1000 for performance)
+        try {
+            const addon = new WealthicaClass();
+            
+            addon.on('ready', async (data) => {
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
                 let grand = 0;
@@ -90,29 +79,24 @@
                     if(years[y] !== undefined) years[y] += a;
                 });
 
-                // Update Table
                 const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
                 document.getElementById('rows').innerHTML = sorted.map(s => `
-                    <tr>
-                        <td><strong>${s}</strong></td>
-                        <td style="color:#64748b">${divs[s].name}</td>
-                        <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    </tr>
+                    <tr><td><strong>${s}</strong></td><td style="color:#64748b">${divs[s].name}</td><td style="text-align:right; font-weight:700;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
                 `).join('');
                 
                 document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
-                // Update Bars
                 const max = Math.max(...Object.values(years)) || 1;
                 document.getElementById('barChart').innerHTML = Object.keys(years).map(y => `
                     <div class="bar" style="height: ${(years[y]/max)*100}%"><div class="bar-label">${y}</div></div>
                 `).join('');
+            });
+        } catch (e) {
+            console.error("Wealthica Boot Error:", e);
+        }
+    }
 
-            } catch (e) { 
-                document.getElementById('rows').innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Sync Error. Please Refresh.</td></tr>";
-            }
-        });
-    })();
+    boot();
 </script>
 </body>
 </html>
