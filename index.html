@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- Relative path to your local file -->
-    <script src="wealthica.js"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
@@ -27,30 +25,46 @@
 
 <div class="card">
     <div class="header">Total Dividends by Symbol</div>
-    <div class="summary">
-        <div>
-            <div style="color:#64748b; font-size:0.95rem;">Total Portfolio Dividends</div>
-            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
+    <div id="app-content">
+        <div class="summary">
+            <div>
+                <div style="color:#64748b; font-size:0.95rem;">Total Portfolio Dividends</div>
+                <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
+            </div>
+            <div class="chart-box" id="chart"></div>
         </div>
-        <div class="chart-box" id="chart"></div>
-    </div>
-    <table>
-        <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Waiting for Wealthica connection...</td></tr></tbody>
-    </table>
-    <div class="footer">
-        <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
-        <button class="btn" onclick="location.reload(true)">Refresh Data</button>
+        <table>
+            <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
+            <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Handshaking with Wealthica...</td></tr></tbody>
+        </table>
+        <div class="footer">
+            <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
+            <button class="btn" onclick="location.reload(true)">Refresh Data</button>
+        </div>
     </div>
 </div>
 
 <script>
-    function startApp() {
-        if (typeof Wealthica === 'undefined') {
-            setTimeout(startApp, 200);
-            return;
-        }
+    // 1. FORCED LOADER: Ensures the script is recognized even with CSP errors
+    function loadSDK() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'wealthica.js'; // Look for local file in same folder
+            script.onload = resolve;
+            script.onerror = () => {
+                // If local fails, try the CDN as a backup
+                const backup = document.createElement('script');
+                backup.src = 'https://wealthica.github.io';
+                backup.onload = resolve;
+                document.head.appendChild(backup);
+            };
+            document.head.appendChild(script);
+        });
+    }
 
+    async function init() {
+        await loadSDK();
+        
         const addon = new Wealthica();
         addon.on('ready', async (data) => {
             try {
@@ -64,7 +78,7 @@
                     const y = new Date(t.date).getFullYear();
                     const a = Math.abs(parseFloat(t.amount) || 0);
 
-                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').trim() : 'Unknown' };
+                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').shift().trim() : 'Unknown' };
                     divs[s].amt += a;
                     grandTotal += a;
                     if(years[y] !== undefined) years[y] += a;
@@ -82,13 +96,11 @@
                     <div class="bar" style="height: ${(years[y]/max)*100}%" title="${y}"></div>
                 `).join('');
 
-            } catch (e) {
-                document.getElementById('rows').innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Sync Error. Please Refresh.</td></tr>`;
-            }
+            } catch (e) { console.error("Data Sync Failed", e); }
         });
     }
 
-    startApp();
+    init();
 </script>
 </body>
 </html>
