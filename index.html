@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- ONLY Wealthica and Chart.js are needed -->
+    <!-- ONLY Wealthica and Chart.js are allowed -->
     <script src="https://wealthica.github.io"></script>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 30px; color: #333; }
-        .card { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        .card { max-width: 800px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 15px 25px; font-size: 1.2rem; font-weight: bold; }
-        .summary { padding: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .total-val { font-size: 2.2rem; font-weight: 800; margin-top: 5px; }
-        .ytd { background: #e6f7ed; color: #28a745; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; }
+        .summary { padding: 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .total-val { font-size: 2.2rem; font-weight: 800; margin: 5px 0; }
+        .ytd { background: #e6f7ed; color: #28a745; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; font-weight: bold; }
         .chart-box { width: 220px; height: 100px; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px 25px; color: #666; font-size: 0.85rem; border-bottom: 2px solid #eee; }
+        th { text-align: left; padding: 12px 25px; color: #666; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #eee; }
         td { padding: 12px 25px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .footer { padding: 20px 25px; display: flex; justify-content: space-between; background: #fff; }
+        .footer { padding: 20px 25px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
         select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
         .btn { background: var(--w-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     </style>
@@ -31,7 +31,7 @@
     <div class="summary">
         <div>
             <div style="color:#666; font-size:0.9rem;">Total Portfolio Dividends</div>
-            <div class="total-val">$<span id="grand">0.00</span> CAD <span class="ytd">+5.2% (YTD)</span></div>
+            <div class="total-val">$<span id="grand">0.00</span> <small>CAD</small> <span class="ytd">+5.2% (YTD)</span></div>
         </div>
         <div class="chart-box"><canvas id="growthChart"></canvas></div>
     </div>
@@ -46,35 +46,46 @@
 </div>
 
 <script>
+    // Ensure Wealthica is ready
     const addon = new Wealthica();
-    addon.on('ready', async () => {
-        const txs = await addon.api.getTransactions({ limit: 1000 });
-        const divs = {};
-        let total = 0;
+    
+    addon.on('ready', async (data) => {
+        try {
+            // Fetch up to 2000 transactions to catch historical dividends
+            const txs = await addon.api.getTransactions({ limit: 2000 });
+            const divs = {};
+            let total = 0;
 
-        txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-            const s = t.symbol || 'CASH';
-            if(!divs[s]) divs[s] = { amt: 0, name: t.description.split(' - ') };
-            divs[s].amt += Math.abs(t.amount);
-            total += Math.abs(t.amount);
-        });
+            txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
+                const s = t.symbol || 'CASH';
+                if(!divs[s]) divs[s] = { amt: 0, name: t.description.split(' - ') };
+                divs[s].amt += Math.abs(t.amount);
+                total += Math.abs(t.amount);
+            });
 
-        const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
-        document.getElementById('rows').innerHTML = sorted.map(s => `
-            <tr>
-                <td><strong>${s}</strong></td>
-                <td style="color:#555">${divs[s].name}</td>
-                <td style="text-align:right; font-weight:bold;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-            </tr>`).join('');
-        
-        document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
-        renderChart();
+            const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
+            document.getElementById('rows').innerHTML = sorted.map(s => `
+                <tr>
+                    <td><strong>${s}</strong></td>
+                    <td style="color:#555">${divs[s].name}</td>
+                    <td style="text-align:right; font-weight:bold;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                </tr>`).join('');
+            
+            document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits:2});
+            renderChart(txs);
+        } catch (e) {
+            console.error("Wealthica Data Error:", e);
+        }
     });
 
-    function renderChart() {
+    function renderChart(txs) {
+        const years =;
+        const data = years.map(y => txs.filter(t => new Date(t.date).getFullYear() === y && ['dividend','distribution'].includes(t.type))
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0));
+
         new Chart(document.getElementById('growthChart'), {
             type: 'bar',
-            data: { labels: ['2020','2021','2022','2023','2024'], datasets: [{ data:, backgroundColor: '#4a90e2', borderRadius: 3 }] },
+            data: { labels: years, datasets: [{ data, backgroundColor: '#4a90e2', borderRadius: 3 }] },
             options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
         });
     }
