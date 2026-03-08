@@ -3,93 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <title>Snowball-Div</title>
-    <!-- Use the new filename to bypass ad-blockers -->
-    <script src="./bridge.js"></script>
+    <!-- Relative path to your local bridge file -->
+    <script src="bridge.js"></script>
     <style>
-        :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
+        :root { --w-blue: #1b6ec2; --bg: #f0f2f5; --green: #28a745; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
-        .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.35rem; font-weight: bold; }
-        .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .total-val { font-size: 2.6rem; font-weight: 800; display: flex; align-items: center; gap: 15px; }
-        .badge { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
-        .chart-box { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
-        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; }
+        .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.4rem; font-weight: bold; }
+        
+        /* Hero Section */
+        .hero { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .total-label { color: #64748b; font-size: 1rem; margin-bottom: 5px; }
+        .total-val { font-size: 2.8rem; font-weight: 800; display: flex; align-items: center; gap: 15px; }
+        .badge { background: #e6f7ed; color: var(--green); padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
+        
+        /* Bar Chart */
+        .chart-box { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+        .bar { width: 24px; background: #5a96d4; border-radius: 4px 4px 0 0; position: relative; opacity: 0.85; }
+        .bar-label { position: absolute; bottom: -22px; left: -5px; width: 35px; font-size: 10px; text-align: center; color: #888; }
+
+        /* Table */
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; background: #fcfcfc; border-bottom: 2px solid #edf2f7; text-transform: uppercase; }
-        td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
+        th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #edf2f7; background: #fcfcfc; }
+        td { padding: 15px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1.05rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; }
-        .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .amt { text-align: right; font-weight: 700; color: #1e293b; }
+
+        /* Footer */
+        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
+        select { padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; background: #fff; cursor: pointer; }
+        .btn { background: var(--w-blue); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div class="header">Total Dividends by Symbol</div>
-    <div class="summary">
+    <div class="hero">
         <div>
-            <div style="color:#64748b; font-size:0.95rem;">Total Portfolio Dividends</div>
-            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
+            <div class="total-label">Total Portfolio Dividends</div>
+            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.5rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
         </div>
-        <div id="chart-container" class="chart-box"></div>
+        <div class="chart-box" id="barChart"></div>
     </div>
     <table>
-        <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Handshaking Snowball-Div...</td></tr></tbody>
+        <thead>
+            <tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr>
+        </thead>
+        <tbody id="rows">
+            <tr><td colspan="3" style="text-align:center; padding: 60px; color: #64748b;">Connecting to Portfolio...</td></tr>
+        </tbody>
     </table>
     <div class="footer">
-        <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
+        <select><option>All Accounts</option></select>
         <button class="btn" onclick="location.reload(true)">Refresh Data</button>
     </div>
 </div>
 
 <script>
-    // Force wait for library
-    function start() {
-        // Try all possible names for the library constructor
-        const W = window.Wealthica || window.WealthicaAddon || window.WealthicaSDK;
-        
+    // Self-starting detector to ensure 'Wealthica' class is ready
+    (function init() {
+        const W = window.Wealthica || window.WealthicaAddon;
         if (!W) {
-            setTimeout(start, 200);
+            setTimeout(init, 200);
             return;
         }
 
         const addon = new W();
         addon.on('ready', async (data) => {
             try {
+                // Fetch Transaction history (Limit 1000 for performance)
                 const txs = await addon.api.getTransactions({ limit: 1000 });
                 const divs = {};
                 let grand = 0;
-                const years = { '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
+                const years = { '2020': 0, '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
 
                 txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-                    const s = t.symbol || 'OTHER';
+                    const s = t.symbol || 'CASH';
                     const y = new Date(t.date).getFullYear();
                     const a = Math.abs(parseFloat(t.amount) || 0);
 
-                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-')[0].trim() : 'Income' };
+                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-')[0].trim() : 'Unknown' };
                     divs[s].amt += a;
                     grand += a;
                     if(years[y] !== undefined) years[y] += a;
                 });
 
+                // Update Table
                 const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
                 document.getElementById('rows').innerHTML = sorted.map(s => `
-                    <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                    <tr>
+                        <td><strong>${s}</strong></td>
+                        <td style="color:#64748b">${divs[s].name}</td>
+                        <td class="amt">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    </tr>
                 `).join('');
                 
                 document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
+                // Update Bars
                 const max = Math.max(...Object.values(years)) || 1;
-                document.getElementById('chart-container').innerHTML = Object.keys(years).map(y => `
-                    <div class="bar" style="height: ${(years[y]/max)*100}%" title="${y}"></div>
+                document.getElementById('barChart').innerHTML = Object.keys(years).map(y => `
+                    <div class="bar" style="height: ${(years[y]/max)*100}%"><div class="bar-label">${y}</div></div>
                 `).join('');
 
-            } catch (e) { console.error("Sync Error", e); }
+            } catch (e) { 
+                document.getElementById('rows').innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Sync Error. Please Refresh.</td></tr>";
+            }
         });
-    }
-    start();
+    })();
 </script>
 </body>
 </html>
