@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <title>Snowball-Div</title>
     
-    <!-- 1. EMBEDDED IFRAME RESIZER: Stops the 5-second timeout error locally -->
+    <!-- 1. INLINE IFRAME RESIZER: Forces the "I'm alive" signal immediately -->
     <script>
         (function() {
             window.iFrameResizer = { targetOrigin: '*' };
-            // Immediate "I'm alive" signal to the parent dashboard
+            // This is the exact raw message Wealthica's container is listening for
             window.parent.postMessage('[iFrameSizer]iFrameResizer0:0:0:init', '*');
         })();
     </script>
 
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; --green: #28a745; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 20px; margin: 0; overflow: hidden; }
         .card { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.4rem; font-weight: bold; }
         .hero { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
@@ -53,46 +53,45 @@
 
 <script>
     (function() {
-        // Direct Handshake Logic
         function connect() {
-            // Find the Addon object injected by Wealthica parent
+            // Check for the SDK object in multiple possible locations
             const W = window.Wealthica || window.WealthicaAddon || (window.parent && window.parent.Wealthica);
             
             if (!W) {
+                // If the object isn't there, keep trying (Wealthica usually injects it into the iframe)
                 setTimeout(connect, 300);
                 return;
             }
 
             try {
+                // Instantiate the addon
                 const addon = (typeof W === 'function') ? new W() : W;
                 
                 addon.on('ready', async (data) => {
-                    console.log("Snowball-Div: Handshake Success");
+                    console.log("GitHub Pages Handshake Success!");
                     try {
-                        // Use currency_value for native currency amounts
                         const txs = await addon.api.getTransactions({ limit: 1000 });
-                        process(txs);
+                        render(txs);
                     } catch (e) {
-                        document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="padding:40px; color:red;">Permission Error. Enable Transaction access in settings.</td></tr>';
+                        document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="padding:40px; color:red; text-align:center;">API Error: Make sure your addon has "Read Transactions" permission.</td></tr>';
                     }
                 });
             } catch (err) {
-                console.error("Snowball-Div: Connection error", err);
+                console.error("Wealthica Connection Error", err);
             }
         }
 
-        function process(txs) {
+        function render(txs) {
             const divs = {};
             let grand = 0;
             const years = {};
             const curY = new Date().getFullYear();
             for(let i=0; i<4; i++) years[curY-i] = 0;
 
-            // Filter for income transactions
             const filtered = txs.filter(t => ['dividend','distribution','interest'].includes(t.type?.toLowerCase()));
 
             if (!filtered.length) {
-                document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:40px;">No income transactions found.</td></tr>';
+                document.getElementById('rows').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:40px;">No dividend data found in history.</td></tr>';
                 return;
             }
 
@@ -100,7 +99,6 @@
                 const s = t.symbol || 'OTHER';
                 const a = Math.abs(parseFloat(t.amount) || 0);
                 const y = new Date(t.date).getFullYear();
-
                 if (!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-').shift().trim() : 'Income' };
                 divs[s].amt += a;
                 grand += a;
