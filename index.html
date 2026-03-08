@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Snowball Dividend</title>
+<title>Snowball Dividend Power-Up</title>
 
 <!-- Required for Wealthica iframe resizing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.2/iframeResizer.contentWindow.min.js"></script>
@@ -11,6 +11,19 @@
 body{
   font-family: Arial, sans-serif;
   padding:40px;
+  background:#f4f6f9;
+}
+
+.card{
+  background:white;
+  padding:30px;
+  border-radius:10px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);
+  max-width:600px;
+}
+
+h1{
+  margin-top:0;
 }
 </style>
 
@@ -18,31 +31,37 @@ body{
 
 <body>
 
-<h1>Snowball Dividend Power-Up</h1>
-<div id="status">Waiting for Wealthica...</div>
+<div class="card">
+<h1>Snowball Dividend</h1>
+<p id="status">Initializing...</p>
+</div>
 
 <script>
 
-function start(){
+function waitForAddon(){
 
-  if (!window.addon) {
+  if(window.addon){
+
+    window.addon.on("ready", function(data){
+
+      console.log("Wealthica ready", data);
+
+      document.getElementById("status").innerText =
+        "Connected to Wealthica successfully";
+
+    });
+
+  }
+  else{
+
     document.getElementById("status").innerText =
       "Running outside Wealthica container";
-    return;
+
   }
-
-  window.addon.on("ready", function(data){
-
-    console.log("Wealthica container ready", data);
-
-    document.getElementById("status").innerText =
-      "Connected to Wealthica successfully";
-
-  });
 
 }
 
-start();
+waitForAddon();
 
 </script>
 
