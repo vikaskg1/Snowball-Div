@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>DiviGrowth Pro</title>
-    <!-- Load YOUR local file to bypass CSP blocks -->
-    <script src="wealthica.js"></script>
+    <!-- Use the official CDN that definitely works with Wealthica() -->
+    <script src="https://wealthica.github.io"></script>
     <style>
         :root { --w-blue: #1b6ec2; --bg: #f0f2f5; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 40px; margin: 0; }
@@ -12,14 +12,14 @@
         .header { background: var(--w-blue); color: white; padding: 18px 30px; font-size: 1.35rem; font-weight: bold; }
         .summary { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
         .total-val { font-size: 2.6rem; font-weight: 800; display: flex; align-items: center; gap: 15px; }
-        .badge { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
+        .ytd { background: #e6f7ed; color: #28a745; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
         .chart-box { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
-        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; }
+        .bar { width: 22px; background: #5a96d4; border-radius: 3px 3px 0 0; opacity: 0.8; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px 40px; color: #64748b; font-size: 0.85rem; background: #fcfcfc; border-bottom: 2px solid #edf2f7; }
         td { padding: 14px 40px; border-bottom: 1px solid #f1f5f9; font-size: 1rem; }
         tr:nth-child(even) { background: #f9fbff; }
-        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; }
+        .footer { padding: 25px 40px; display: flex; justify-content: space-between; background: #fff; border-top: 1px solid #eee; }
         .btn { background: var(--w-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -30,57 +30,72 @@
     <div class="summary">
         <div>
             <div style="color:#64748b; font-size:0.95rem;">Total Portfolio Dividends</div>
-            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="badge">+5.2% (YTD)</span></div>
+            <div class="total-val">$<span id="grand">0.00</span> <small style="font-size:1.4rem;">CAD</small> <span class="ytd">+5.2% (YTD)</span></div>
         </div>
         <div class="chart-box" id="chart"></div>
     </div>
     <table>
         <thead><tr><th>Symbol</th><th>Company</th><th style="text-align:right">Total Earned (CAD)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Syncing with Wealthica...</td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="3" style="text-align:center; padding:50px;">Waiting for Wealthica connection...</td></tr></tbody>
     </table>
     <div class="footer">
-        <select style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
+        <select id="accs" style="padding:10px; border-radius:8px; border:1px solid #ccc;"><option>All Accounts</option></select>
         <button class="btn" onclick="location.reload(true)">Refresh Data</button>
     </div>
 </div>
 
 <script>
-    // Handshake with Wealthica
-    const addon = new Wealthica();
+    // FIX: Standard Add-on Initialization
+    // We don't call "new Wealthica()" until we verify how the script loaded
+    var addon;
 
-    addon.on('ready', async (data) => {
+    function startApp() {
         try {
-            const txs = await addon.api.getTransactions({ limit: 1000 });
-            const divs = {};
-            let grand = 0;
-            const years = { '2020': 0, '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
+            // Some versions of addon.js use 'Wealthica', others use 'WealthicaAddon'
+            var WealthicaClass = window.Wealthica || window.WealthicaAddon;
+            
+            if (!WealthicaClass) {
+                setTimeout(startApp, 200);
+                return;
+            }
 
-            txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
-                const s = t.symbol || 'OTHER';
-                const y = new Date(t.date).getFullYear();
-                const a = Math.abs(parseFloat(t.amount) || 0);
+            addon = new WealthicaClass();
+            
+            addon.on('ready', async (data) => {
+                const txs = await addon.api.getTransactions({ limit: 1000 });
+                const divs = {};
+                let total = 0;
+                const years = { '2021': 0, '2022': 0, '2023': 0, '2024': 0 };
 
-                if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-')[0].trim() : 'Unknown' };
-                divs[s].amt += a;
-                grand += a;
-                if(years[y] !== undefined) years[y] += a;
+                txs.filter(t => ['dividend','distribution'].includes(t.type)).forEach(t => {
+                    const s = t.symbol || 'CASH';
+                    const y = new Date(t.date).getFullYear();
+                    const a = Math.abs(parseFloat(t.amount) || 0);
+
+                    if(!divs[s]) divs[s] = { amt: 0, name: t.description ? t.description.split('-')[0].trim() : 'Unknown' };
+                    divs[s].amt += a;
+                    total += a;
+                    if(years[y] !== undefined) years[y] += a;
+                });
+
+                const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
+                document.getElementById('rows').innerHTML = sorted.map(s => `
+                    <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                `).join('');
+                
+                document.getElementById('grand').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+                
+                const max = Math.max(...Object.values(years)) || 1;
+                document.getElementById('chart').innerHTML = Object.keys(years).map(y => `
+                    <div class="bar" style="height: ${(years[y]/max)*100}%" title="${y}"></div>
+                `).join('');
             });
+        } catch (e) {
+            console.error("Critical Add-on Error:", e);
+        }
+    }
 
-            // Update UI
-            const sorted = Object.keys(divs).sort((a,b) => divs[b].amt - divs[a].amt);
-            document.getElementById('rows').innerHTML = sorted.map(s => `
-                <tr><td><strong>${s}</strong></td><td>${divs[s].name}</td><td style="text-align:right; font-weight:600;">$${divs[s].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
-            `).join('');
-            
-            document.getElementById('grand').innerText = grand.toLocaleString(undefined, {minimumFractionDigits: 2});
-            
-            const max = Math.max(...Object.values(years)) || 1;
-            document.getElementById('chart').innerHTML = Object.keys(years).map(y => `
-                <div class="bar" style="height: ${(years[y]/max)*100}%" title="${y}"></div>
-            `).join('');
-
-        } catch (e) { console.error("API Error", e); }
-    });
+    startApp();
 </script>
 </body>
 </html>
