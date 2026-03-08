@@ -1,38 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hello Wealthica</title>
-
-<script src="https://unpkg.com/@wealthica/power-up-sdk@latest/dist/power-up-sdk.js"></script>
-
+    <meta charset="UTF-8">
+    <title>Wealthica Power-Up</title>
+    <!-- 1. MANDATORY: Required for the Wealthica parent app to communicate with this iframe -->
+    <script src="https://cdnjs.cloudflare.com"></script>
+    
+    <!-- 2. The Wealthica Power-Up SDK -->
+    <script src="https://wealthica.github.io"></script>
+    
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
+        .container { border: 1px solid #eee; padding: 20px; border-radius: 8px; }
+    </style>
 </head>
-
 <body>
+    <div class="container">
+        <h1 id="status">Connecting...</h1>
+        <p id="user-info"></p>
+    </div>
 
-<h1>Hello Power-Up</h1>
-<div id="status">Loading...</div>
+    <script>
+        // Use window.onload to ensure Wealthica script is fully loaded
+        window.onload = function() {
+            if (typeof Wealthica !== 'undefined') {
+                try {
+                    // Fix: Use 'new Wealthica()' - 'WealthicaPowerUp' is not a valid constructor
+                    const addon = new Wealthica();
 
-<script>
-
-window.addEventListener("load", function () {
-
-  if (typeof WealthicaPowerUp === "undefined") {
-    document.getElementById("status").innerText = "SDK failed to load";
-    return;
-  }
-
-  const powerup = new WealthicaPowerUp();
-
-  powerup.onReady(function(data){
-      console.log("PowerUp Ready", data);
-      document.getElementById("status").innerText =
-          "Hello " + data.user.email;
-  });
-
-});
-
-</script>
-
+                    addon.on('ready', function(data) {
+                        document.getElementById('status').innerText = "Hello World!";
+                        const name = data.user.name || "Wealthica User";
+                        document.getElementById('user-info').innerText = `Welcome, ${name}! Your Power-Up is active.`;
+                        
+                        console.log("Power-Up ready with data:", data);
+                    });
+                } catch (err) {
+                    document.getElementById('status').innerText = "Init Error: " + err.message;
+                }
+            } else {
+                document.getElementById('status').innerText = "Error: SDK not loaded.";
+            }
+        };
+    </script>
 </body>
 </html>
