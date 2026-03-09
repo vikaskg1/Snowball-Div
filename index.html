@@ -1,19 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Historical Dividends</title>
-<link rel="stylesheet" href="style.css">
-<script src="wealthica.js"></script>
-</head>
-<body>
-
-<h1>Historical Dividend Summary</h1>
-<div id="status">Initializing...</div>
-
-<h2>Dividends by Stock</h2>
-<div id="content"></div>
-
-</body>
-<script src="main.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Historical Dividends</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="wealthica.js"></script>
+  </head>
+  <body>
+    <div
+      style="
+        display: grid;
+        grid-auto-flow: column;
+        align-items: center;
+        gap: 15px;
+      "
+    >
+      <h2 style="margin: 0">Historical Dividends by Stock</h2>
+      <div id="status">Initializing...</div>
+    </div>
+    <div id="content"></div>
+  </body>
+  <script src="main.js"></script>
 </html>
