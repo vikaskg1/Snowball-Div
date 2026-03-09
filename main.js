@@ -6,8 +6,11 @@ addon.on('init', async (data) => {
   await loadDividendHistory( data.dateRangeFilter[0],  data.dateRangeFilter[1]);
 
   addon.on('update', async (newFilters) => {
-        console.log("Filters changed!", newFilters);
-        await loadDividendHistory(newFilters.fromDate, newFilters.toDate);
+        console.log("In Update!", newFilters);
+        if (newFilters && newFilters.dateRangeFilter ) {
+          console.log("Has Real Filters changed!", newFilters);
+          await loadDividendHistory(newFilters.fromDate, newFilters.toDate);
+        }
     });
 });
 
