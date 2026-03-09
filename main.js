@@ -2,10 +2,43 @@ var addon = new Addon();
 
 let tableData = [];
 let currentSort = { column: "total", direction: "desc" };
+let allPositionsMap;
+let heldSymbols;
+const dividendTypes = new Set([
+  "Dividends",
+  "DIV",
+  "Dividend",
+  "Distribution",
+  "DIST",
+]);
 
 addon.on("init", async (data) => {
   document.getElementById("status").innerText = "Connected to Wealthica!";
   console.log("data is", data);
+
+  await addon.api
+    .getPositions()
+    .then(function (positions) {
+      const positionsMap = positions.reduce((acc, p) => {
+        const symbol = p.security?.symbol || p.ticker?.symbol;
+
+        if (symbol) {
+          acc[symbol] = {
+            symbol: symbol,
+            qty: p.quantity,
+            lastPrice: p.security?.last_price || 0,
+          };
+        }
+        return acc;
+      }, {});
+      heldSymbols = new Set(Object.keys(positionsMap));
+
+      allPositionsMap = positionsMap;
+      console.log("heldSymbols", heldSymbols);
+    })
+    .catch(function (err) {
+      console.error("Error fetching positions:", err);
+    });
 
   await loadDividendHistory(data.dateRangeFilter[0], data.dateRangeFilter[1]);
 
@@ -27,10 +60,7 @@ async function loadDividendHistory(from, to) {
     });
 
     const dividendTx = transactions.filter(
-      (tx) =>
-        tx.origin_type === "Dividends" ||
-        tx.origin_type === "DIV" ||
-        tx.origin_type === "Dividend",
+      (tx) => dividendTypes.has(tx.origin_type) && heldSymbols.has(tx.symbol),
     );
 
     if (dividendTx.length === 0) {
@@ -46,20 +76,42 @@ async function loadDividendHistory(from, to) {
       const amount = tx.currency_amount || 0;
 
       if (!dividendMap[symbol]) {
-        dividendMap[symbol] = { total: 0, count: 0 };
+        dividendMap[symbol] = {
+          total: 0,
+          count: 0,
+          qty: 0,
+          lastPrice: 0,
+        };
       }
 
       dividendMap[symbol].total += amount;
       dividendMap[symbol].count += 1;
     });
 
-    const sorted = Object.entries(dividendMap).sort(
+    const displayMap = {};
+
+    for (const symbol in dividendMap) {
+      const divData = dividendMap[symbol]; // Get { qty: 10, price: 150 }
+
+      // Go DIRECTLY to the same Symbol in your Dividend Map
+      // No searching required!
+      const positionData = allPositionsMap[symbol] || { qty: 0, lastPrice: 0 };
+
+      // Staple them together into a new Map
+      displayMap[symbol] = {
+        ...divData,
+        qty: positionData.qty,
+        lastPrice: positionData.lastPrice,
+      };
+    }
+
+    const sorted = Object.entries(displayMap).sort(
       (a, b) => b[1].total - a[1].total,
     );
 
     tableData = sorted;
-    console.log("tableData", tableData);
 
+    console.log("tableData", tableData);
     renderDividendTable();
   } catch (err) {
     document.getElementById("status").innerText =
@@ -89,10 +141,10 @@ function renderDividendTable() {
       return (a[1].total - b[1].total) * dir;
     }
 
-    if (currentSort.column === "avg") {
-      const avgA = a[1].total / a[1].count;
-      const avgB = b[1].total / b[1].count;
-      return (avgA - avgB) * dir;
+    if (currentSort.column === "inv") {
+      const invA = a[1].qty * a[1].lastPrice;
+      const invB = b[1].qty * b[1].lastPrice;
+      return (invA - invB) * dir;
     }
   });
 
@@ -107,7 +159,7 @@ function renderDividendTable() {
       <th data-sort="symbol">Symbol</th>
       <th data-sort="payments">Payments</th>
       <th data-sort="total">Total ($)</th>
-      <th data-sort="avg">Average per Payment ($)</th>
+      <th data-sort="inv">Invsted ($)</th>
     </tr>
   `;
 
@@ -116,7 +168,7 @@ function renderDividendTable() {
   const tbody = document.createElement("tbody");
 
   data.forEach(([symbol, stats]) => {
-    const avg = stats.count ? (stats.total / stats.count).toFixed(2) : "0.00";
+    const inv = stats.count ? (stats.qty * stats.lastPrice).toFixed(2) : "0.00";
 
     const row = document.createElement("tr");
 
@@ -124,7 +176,7 @@ function renderDividendTable() {
       <td data-label="Symbol">${symbol}</td>
       <td data-label="Payments">${stats.count}</td>
       <td data-label="Total ($)">${stats.total.toFixed(2)}</td>
-      <td data-label="Average per Payment ($)">${avg}</td>
+      <td data-label="Invested ($)">${inv}</td>
     `;
 
     tbody.appendChild(row);
