@@ -10,7 +10,7 @@ async function loadDividendHistory() {
     const transactions = await addon.api.getTransactions();
 
     // Filter only dividend transactions
-    const dividendTx = transactions.filter(tx => tx.type === 'dividend');
+    const dividendTx = transactions.filter(tx => tx.origin_type === 'Dividends');
 
     if(dividendTx.length === 0){
       document.getElementById("content").innerText = "No historical dividends found.";
@@ -24,7 +24,7 @@ async function loadDividendHistory() {
       const symbol = tx.symbol || tx.security?.symbol || "UNKNOWN";
 
       // Read amount from possible broker-imported fields
-      const amount = tx.amount || tx.value || tx.cashAmount || 0;
+      const amount = tx.currency_amount || tx.value || tx.cashAmount || 0;
 
       if (!dividendMap[symbol]) {
         dividendMap[symbol] = { total: 0, count: 0 };
