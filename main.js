@@ -1,4 +1,4 @@
-// Mock fallback for local testing (optional)
+// Local mock for testing outside Wealthica
 if (typeof Addon === "undefined") {
   var Addon = function () {
     this.api = {
@@ -14,7 +14,6 @@ if (typeof Addon === "undefined") {
 }
 
 const addon = new Addon();
-
 const statusEl = document.getElementById('status');
 const contentEl = document.getElementById('content');
 
@@ -22,10 +21,7 @@ async function loadDividendHistory() {
   try {
     statusEl.textContent = 'Loading dividends…';
 
-    // Fetch transactions
     const txs = await addon.api.getTransactions();
-
-    // Filter only dividends
     const dividends = txs.filter(tx => tx.origin_type === 'Dividend');
 
     if (!dividends.length) {
@@ -41,7 +37,7 @@ async function loadDividendHistory() {
       grouped[tx.symbol].push(tx);
     });
 
-    // Build table HTML
+    // Build table
     let html = `<table>
                   <thead>
                     <tr>
@@ -60,6 +56,7 @@ async function loadDividendHistory() {
       const total = arr.reduce((sum, tx) => sum + tx.currency_amount, 0);
       const avg = total / arr.length;
       grandTotal += total;
+
       html += `<tr>
                  <td>${symbol}</td>
                  <td>${arr.length}</td>
@@ -75,7 +72,6 @@ async function loadDividendHistory() {
              </tr>`;
 
     html += '</tbody></table>';
-
     contentEl.innerHTML = html;
     statusEl.textContent = 'Connected to Wealthica!';
   } catch (err) {
@@ -85,8 +81,8 @@ async function loadDividendHistory() {
   }
 }
 
-// Load initially
-addon.on('ready', loadDividendHistory);
+// Initial fast load to avoid timeout
+addon.on('init', loadDividendHistory);
 
-// Respond to Wealthica global filter changes
+// React to global filter changes
 addon.on('filtersChanged', loadDividendHistory);
