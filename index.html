@@ -7,27 +7,13 @@
   <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- Wealthica SDK from public CDN -->
+  <!-- Wealthica SDK (public CDN) -->
   <script src="https://unpkg.com/wealthica-sdk-js@latest/dist/wealthica.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Dividend Summary</h1>
     <div id="status">Initializing…</div>
-
-    <!-- Date range filters -->
-    <div class="filters">
-      <label>
-        Start Date:
-        <input type="date" id="startDate">
-      </label>
-      <label>
-        End Date:
-        <input type="date" id="endDate">
-      </label>
-      <button id="applyFilter">Apply Filter</button>
-    </div>
-
     <div id="content"></div>
   </div>
 
