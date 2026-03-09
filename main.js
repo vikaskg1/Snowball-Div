@@ -2,12 +2,19 @@ var addon = new Addon();
 
 addon.on('init', async function() {
   document.getElementById("status").innerText = "Connected to Wealthica!";
+   await addon.filtersReady();
+  await loadDividendHistory();
+});
+
+// React to global filter changes
+addon.on('filterChange', async function() {
+  document.getElementById("status").innerText = "Global filters changed — updating...";
   await loadDividendHistory();
 });
 
 async function loadDividendHistory() {
   try {
-    const transactions = await addon.api.getTransactions();
+   const transactions = await addon.api.getTransactions();
 
     // Filter only dividend transactions
     const dividendTx = transactions.filter(tx => tx.origin_type === 'Dividends');
