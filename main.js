@@ -1,9 +1,9 @@
-let addon, currentSort = { column: null, ascending: true }; 
+let addon, currentSort = { column: null, ascending: true };
 
 document.getElementById("applyFilter").addEventListener("click", loadDividendHistory);
 
+// Only initialize if inside Wealthica
 if (typeof Addon !== "undefined") {
-  // Only initialize if running inside Wealthica
   addon = new Addon();
 
   addon.on('init', async function() {
@@ -13,6 +13,7 @@ if (typeof Addon !== "undefined") {
 } else {
   document.getElementById("status").innerText = "Addon can only run inside Wealthica.";
 }
+
 async function loadDividendHistory() {
   const container = document.getElementById("content");
   container.innerHTML = "";
@@ -26,10 +27,9 @@ async function loadDividendHistory() {
       return;
     }
 
-    // Filter only dividends
     const dividendTx = transactions.filter(tx => tx.origin_type === "Dividend");
 
-    // Apply custom date range filter
+    // Date filter
     const startInput = document.getElementById("startDate").value;
     const endInput = document.getElementById("endDate").value;
     let startDate = startInput ? new Date(startInput) : null;
@@ -79,12 +79,11 @@ function renderDividendTable(data) {
       <th data-column="symbol">Symbol</th>
       <th data-column="count">Payments</th>
       <th data-column="total">Total ($)</th>
-      <th data-column="average">Average per Payment ($)</th>
+      <th data-column="average">Average ($)</th>
     </tr>
   `;
   table.appendChild(thead);
 
-  // Sorting listeners
   thead.querySelectorAll("th").forEach(th => {
     th.addEventListener("click", () => {
       const column = th.dataset.column;
@@ -116,7 +115,7 @@ function renderDividendTable(data) {
     const th = thead.querySelector(`th[data-column="${currentSort.column}"]`);
     const arrow = document.createElement("span");
     arrow.className = "sort-arrow";
-    arrow.innerHTML = currentSort.ascending ? "&#9650;" : "&#9660;"; // ▲ or ▼
+    arrow.innerHTML = currentSort.ascending ? "&#9650;" : "&#9660;";
     th.appendChild(arrow);
   }
 
