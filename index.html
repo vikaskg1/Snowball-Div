@@ -1,23 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Wealthica Dividend Summary</title>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Wealthica SDK (must load before main.js) -->
-  <script src="https://unpkg.com/wealthica-sdk-js@latest/dist/wealthica.js"></script>
+<meta charset="UTF-8">
+<title>Historical Dividends</title>
+<link rel="stylesheet" href="style.css">
+<script src="wealthica.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Dividend Summary</h1>
-    <div id="status">Initializing…</div>
-    <div id="content"></div>
-  </div>
 
-  <!-- Main JS -->
-  <script src="main.js"></script>
+<h1>Historical Dividend Summary</h1>
+<div id="status">Initializing...</div>
+
+<h2>Dividends by Stock</h2>
+<div id="content"></div>
+
 </body>
+<script src="main.js"></script>
 </html>
