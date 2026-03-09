@@ -1,47 +1,30 @@
 var addon = new Addon();
 
-// Initial load
 addon.on('init', async function() {
-  try {
-    document.getElementById("status").innerText = "Connected to Wealthica!";
-
-    // Load initial transactions
-    await loadDividendHistory();
-
-    // React to global filter changes
-    addon.on('filtersChanged', async function() {
-      document.getElementById("status").innerText = "Global filters changed — updating...";
-      await loadDividendHistory();
-    });
-
-  } catch (err) {
-    document.getElementById("status").innerText = "Error initializing add-on";
-    console.error("Initialization error:", err);
-  }
+  document.getElementById("status").innerText = "Connected to Wealthica!";
+  await loadDividendHistory();
 });
 
 async function loadDividendHistory() {
   try {
     const transactions = await addon.api.getTransactions();
 
-    if (!transactions || transactions.length === 0) {
-      document.getElementById("content").innerText = "No transactions returned.";
-      return;
-    }
+    // Filter only dividend transactions
+    const dividendTx = transactions.filter(tx => tx.type === 'dividend');
 
-    // Filter only dividends
-    const dividendTx = transactions.filter(tx => tx.origin_type === 'Dividend');
-
-    if (dividendTx.length === 0) {
+    if(dividendTx.length === 0){
       document.getElementById("content").innerText = "No historical dividends found.";
       return;
     }
 
-    // Group by symbol
     const dividendMap = {};
+
     dividendTx.forEach(tx => {
+      // Symbol fallback for imported brokers
       const symbol = tx.symbol || tx.security?.symbol || "UNKNOWN";
-      const amount = tx.currency_amount || 0;
+
+      // Read amount from possible broker-imported fields
+      const amount = tx.amount || tx.value || tx.cashAmount || 0;
 
       if (!dividendMap[symbol]) {
         dividendMap[symbol] = { total: 0, count: 0 };
@@ -51,14 +34,14 @@ async function loadDividendHistory() {
       dividendMap[symbol].count += 1;
     });
 
-    // Sort descending by total
-    const sorted = Object.entries(dividendMap).sort((a, b) => b[1].total - a[1].total);
+    // Sort by total dividend descending
+    const sorted = Object.entries(dividendMap).sort((a,b) => b[1].total - a[1].total);
 
     renderDividendTable(sorted);
 
-  } catch (err) {
+  } catch(err) {
     document.getElementById("status").innerText = "Error loading dividend history";
-    console.error("loadDividendHistory error:", err);
+    console.error(err);
   }
 }
 
@@ -98,19 +81,12 @@ function renderDividendTable(sortedData) {
     grandTotal += data.total;
   });
 
-  // Add grand total row
-  const totalRow = document.createElement("tr");
-  totalRow.className = "total-row";
-  totalRow.innerHTML = `
-    <td colspan="2">Grand Total</td>
-    <td>${grandTotal.toFixed(2)}</td>
-    <td>-</td>
-  `;
-  tbody.appendChild(totalRow);
-
   table.appendChild(tbody);
   container.appendChild(table);
 
-  // Update status
-  document.getElementById("status").innerText = "Connected to Wealthica! Displaying historical dividends.";
+  // Grand total
+  const totalDiv = document.createElement("div");
+  totalDiv.className = "total";
+  totalDiv.innerText = `Grand Total Dividends: $${grandTotal.toFixed(2)}`;
+  container.appendChild(totalDiv);
 }
