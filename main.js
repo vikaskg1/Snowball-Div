@@ -5,7 +5,7 @@ addon.on('init', async function() {
   await loadDividendHistory();
 });
 
-addon.on('inupdateit', async function() {
+addon.on('update', async function() {
   await loadDividendHistory();
 });
 
