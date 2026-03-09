@@ -1,55 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Snowball Dividend Developer Add-On</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.2/iframeResizer.contentWindow.min.js"></script>
-<style>
-body { font-family: Arial; background:#f4f6f9; padding:40px; display:flex; justify-content:center;}
-.card { background:#fff; padding:30px; border-radius:12px; max-width:600px; width:100%; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-h1{margin-top:0;}
-.status{margin-top:20px; font-weight:bold;}
-.portfolio{margin-top:20px;}
-.portfolio-item{padding:8px 0; border-bottom:1px solid #eee;}
-</style>
+  <meta charset="UTF-8" />
+  <title>Snowball Dividend Add‑On</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="card">
-<h1>Snowball Dividend</h1>
-<div id="status" class="status">Initializing...</div>
-<div class="portfolio" id="portfolio"></div>
-</div>
 
-<script>
-// Immediately check for Wealthica container and init
-(function initAddon() {
-  if(window.addon && typeof window.addon.init === 'function') {
-    window.addon.init();  // REQUIRED by Wealthica
+  <h1>Snowball Dividend Add‑On</h1>
+  <div id="status">Loading…</div>
+  <div id="content"></div>
 
-    window.addon.on('ready', function(data){
-      document.getElementById("status").innerText = "Connected to Wealthica successfully";
+  <script src="wealthica.js"></script>
+  <script src="main.js"></script>
 
-      // Dummy portfolio
-      const portfolio = [
-        {symbol:"AAPL", shares:10, dividend:0.92},
-        {symbol:"MSFT", shares:5, dividend:2.72},
-        {symbol:"KO", shares:20, dividend:0.44}
-      ];
-
-      const portfolioDiv = document.getElementById("portfolio");
-      portfolioDiv.innerHTML = "<h3>Portfolio (dummy)</h3>";
-      portfolio.forEach(item=>{
-        const el = document.createElement("div");
-        el.className="portfolio-item";
-        el.innerText=`${item.symbol}: ${item.shares} shares → Annual Dividend: $${(item.shares*item.dividend).toFixed(2)}`;
-        portfolioDiv.appendChild(el);
-      });
-    });
-  } else {
-    // Retry quickly until Wealthica injects the container
-    requestAnimationFrame(initAddon);
-  }
-})();
-</script>
 </body>
 </html>
