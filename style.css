@@ -1,6 +1,6 @@
 /* Global styles */
 body {
-  font-family: 'Inter', Arial, sans-serif;
+  font-family: "Inter", Arial, sans-serif;
   background: #f0f2f5;
   color: #333;
   padding: 30px;
@@ -38,7 +38,7 @@ table {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
 }
 
 thead tr {
@@ -47,8 +47,14 @@ thead tr {
   text-align: left;
 }
 
-th, td {
+th,
+td {
   padding: 12px 15px;
+}
+
+th {
+  cursor: pointer;
+  user-select: none;
 }
 
 tbody tr:nth-child(even) {
@@ -69,12 +75,17 @@ tbody tr:hover {
   text-align: center;
   padding: 15px 20px;
   border-radius: 8px;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
 }
 
 /* Responsive */
 @media (max-width: 600px) {
-  table, thead, tbody, th, td, tr {
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
     display: block;
   }
   thead tr {
