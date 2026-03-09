@@ -1,22 +1,15 @@
 var addon = new Addon();
 
 // Initial load
-addon.on('ready', async function() {
-  try {
-    document.getElementById("status").innerText = "Connected to Wealthica!";
-
-    // Load and render dividends
+addon.on('ready', async  (data) => {
+    console.log('Initial data:', data);
     await loadDividendHistory();
+});
 
-    // Listen for global filter changes
-    addon.on('filterChange', async function() {
-      document.getElementById("status").innerText = "Global filters changed — updating...";
-      await loadDividendHistory();
-    });
-  } catch (err) {
-    document.getElementById("status").innerText = "Error initializing add-on";
-    console.error(err);
-  }
+addon.on('filters:changed', async (newFilters) => {
+    console.log('Filters updated:', newFilters);
+    // Typically, you'll want to re-fetch your data based on the new filters
+    await loadDividendHistory();
 });
 
 async function loadDividendHistory() {
