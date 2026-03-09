@@ -21,15 +21,16 @@ addon.on("init", async (data) => {
 
 async function loadDividendHistory(from, to) {
   try {
-    console.log("Filters are!", from);
-
     const transactions = await addon.api.getTransactions({
       from: from,
       to: to,
     });
 
     const dividendTx = transactions.filter(
-      (tx) => tx.origin_type === "Dividends",
+      (tx) =>
+        tx.origin_type === "Dividends" ||
+        tx.origin_type === "DIV" ||
+        tx.origin_type === "Dividend",
     );
 
     if (dividendTx.length === 0) {
@@ -57,6 +58,7 @@ async function loadDividendHistory(from, to) {
     );
 
     tableData = sorted;
+    console.log("tableData", tableData);
 
     renderDividendTable();
   } catch (err) {
