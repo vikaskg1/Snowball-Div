@@ -3,6 +3,12 @@ var addon = new Addon();
 addon.on('init', async function() {
   document.getElementById("status").innerText = "Connected to Wealthica!";
   await loadDividendHistory();
+
+  addon.on('filters:changed', asyn (newFilters) => {
+        console.log("Dashboard filters updated:", newFilters);
+        // Trigger your data refresh logic here
+        await loadDividendHistory();
+    });
 });
 
 addon.on('update', async function() {
