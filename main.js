@@ -20,7 +20,6 @@ async function loadDividendHistory(data) {
         // Map dashboard filters to API parameters
         from: data.dateRangeFilter[0],
         to: data.dateRangeFilter[1],
-        institutions: data.institutionsFilter.join(','),
         accounts: data.groups.join(',')
     });
 
