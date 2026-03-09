@@ -1,19 +1,16 @@
 var addon = new Addon();
 
-// Use init, because ready/filtersReady do not exist
+// Listen for filter changes at the top level
+addon.on('filterChange', async function() {
+  document.getElementById("status").innerText = "Global filters changed — updating…";
+  await loadDividendHistory();
+});
+
+// Initial load after add-on container is ready
 addon.on('init', async function() {
   try {
     document.getElementById("status").innerText = "Connected to Wealthica! Loading dividends…";
-
-    // Load transactions (first fetch)
     await loadDividendHistory();
-
-    // Listen for filter changes
-    addon.on('filterChange', async function() {
-      document.getElementById("status").innerText = "Global filters changed — updating…";
-      await loadDividendHistory();
-    });
-
   } catch (err) {
     document.getElementById("status").innerText = "Error initializing add-on";
     console.error("Initialization error:", err);
@@ -73,7 +70,6 @@ function renderDividendTable(sortedData) {
 
   const table = document.createElement("table");
 
-  // Header
   const thead = document.createElement("thead");
   thead.innerHTML = `
     <tr>
