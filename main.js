@@ -1,12 +1,12 @@
 var addon = new Addon();
 
-// Listen for filter changes at the top level
+// Listen for filter changes outside init
 addon.on('filterChange', async function() {
   document.getElementById("status").innerText = "Global filters changed — updating…";
   await loadDividendHistory();
 });
 
-// Initial load after add-on container is ready
+// Initial load
 addon.on('init', async function() {
   try {
     document.getElementById("status").innerText = "Connected to Wealthica! Loading dividends…";
@@ -22,7 +22,14 @@ async function loadDividendHistory() {
   container.innerHTML = "";
 
   try {
-    const transactions = await addon.api.getTransactions();
+    // Get the currently selected global filters
+    const filters = addon.getFilters(); // { startDate, endDate, accounts, ... }
+
+    const transactions = await addon.api.getTransactions({
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      accounts: filters.accounts
+    });
 
     if (!transactions || transactions.length === 0) {
       container.innerText = "No transactions found for the selected filters.";
@@ -70,6 +77,7 @@ function renderDividendTable(sortedData) {
 
   const table = document.createElement("table");
 
+  // Table header
   const thead = document.createElement("thead");
   thead.innerHTML = `
     <tr>
