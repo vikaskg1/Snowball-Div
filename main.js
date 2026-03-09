@@ -1,14 +1,14 @@
 var addon = new Addon();
 
-// Initial load
-addon.on('init', async function() {
+// When the add-on is fully ready (filters applied)
+addon.on('ready', async function() {
   try {
     document.getElementById("status").innerText = "Connected to Wealthica!";
 
-    // Load transactions
+    // Initial load respecting filters
     await loadDividendHistory();
 
-    // React to global filter changes
+    // Listen for global filter changes
     addon.on('filterChange', async function() {
       document.getElementById("status").innerText = "Global filters changed — updating...";
       await loadDividendHistory();
