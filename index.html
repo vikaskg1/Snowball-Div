@@ -1,19 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Historical Dividends</title>
-<link rel="stylesheet" href="style.css">
-<script src="wealthica.js"></script>
+  <meta charset="UTF-8">
+  <title>Wealthica Dividend Summary</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.wealthica.com/addon/wealthica.js"></script>
 </head>
 <body>
+  <div class="container">
+    <h1>Dividend Summary</h1>
+    <div id="status">Initializing…</div>
 
-<h1>Historical Dividend Summary</h1>
-<div id="status">Initializing...</div>
+    <!-- Custom Date Range Filter -->
+    <div class="filters">
+      <label>
+        Start Date:
+        <input type="date" id="startDate">
+      </label>
+      <label>
+        End Date:
+        <input type="date" id="endDate">
+      </label>
+      <button id="applyFilter">Apply Filter</button>
+    </div>
 
-<h2>Dividends by Stock</h2>
-<div id="content"></div>
+    <div id="content"></div>
+  </div>
 
+  <script src="main.js"></script>
 </body>
-<script src="main.js"></script>
 </html>
