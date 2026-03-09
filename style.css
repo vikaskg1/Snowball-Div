@@ -1,29 +1,29 @@
-body{
-font-family: Arial;
-background:#f6f8fb;
-padding:20px;
+body {
+  font-family: Arial, sans-serif;
+  background: #f6f8fb;
+  padding: 20px;
 }
 
-h1{
-color:#2c3e50;
+h1 {
+  color: #2c3e50;
 }
 
-#content{
-margin-top:20px;
+#content {
+  margin-top: 20px;
 }
 
-.symbol-row{
-padding:8px;
-border-bottom:1px solid #ddd;
+.symbol-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
 }
 
-.total{
-margin-top:20px;
-font-weight:bold;
-font-size:18px;
+.total {
+  margin-top: 20px;
+  font-weight: bold;
+  font-size: 18px;
 }
 
-canvas{
-margin-top:40px;
-max-width:700px;
+canvas {
+  margin-top: 40px;
+  max-width: 700px;
 }
