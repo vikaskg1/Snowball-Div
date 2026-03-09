@@ -1,102 +1,65 @@
 var addon = new Addon();
 
-addon.on('init', function () {
+addon.on('init', async function() {
   document.getElementById("status").innerText = "Connected to Wealthica!";
-  loadPortfolio();
+  await loadDividendHistory();
 });
 
-async function loadPortfolio() {
+async function loadDividendHistory() {
   try {
-    const positions = await addon.api.getPositions();
+    // Fetch all transactions (dividends, trades, etc.)
+    const transactions = await addon.api.getTransactions();
 
-    // Hardcoded dividend values for testing
-    const dividendLookup = {
-      "AAPL": 0.92,
-      "MSFT": 2.72,
-      "KO": 0.44,
-      "TSLA": 0.00 // example of zero dividend stock
-    };
+    // Filter only dividend transactions
+    const dividendTx = transactions.filter(tx => tx.type === 'dividend');
 
-    // Aggregate shares by symbol
+    if(dividendTx.length === 0){
+      document.getElementById("content").innerText = "No historical dividends found.";
+      return;
+    }
+
+    // Aggregate dividends by symbol
     const dividendMap = {};
-    positions.forEach(p => {
-      const symbol = p.symbol || "UNKNOWN";
-      const shares = p.quantity || 0;
-      const dividendPerShare = dividendLookup[symbol] || 0;
+    dividendTx.forEach(tx => {
+      const symbol = tx.symbol || "UNKNOWN";
+      const amount = tx.amount || 0;
 
       if (!dividendMap[symbol]) {
-        dividendMap[symbol] = { shares: 0, dividendPerShare };
+        dividendMap[symbol] = { total: 0, count: 0 };
       }
-      dividendMap[symbol].shares += shares;
+
+      dividendMap[symbol].total += amount;
+      dividendMap[symbol].count += 1;
     });
 
-    renderDividendSummary(dividendMap);
-    renderSnowball(dividendMap);
+    // Convert map to array and sort descending by total dividend
+    const sorted = Object.entries(dividendMap).sort((a,b) => b[1].total - a[1].total);
 
-  } catch (err) {
-    document.getElementById("status").innerText = "Could not load portfolio";
+    renderDividendTable(sorted);
+
+  } catch(err) {
+    document.getElementById("status").innerText = "Error loading dividend history";
     console.error(err);
   }
 }
 
-function renderDividendSummary(map) {
+function renderDividendTable(sortedData) {
   const container = document.getElementById("content");
   container.innerHTML = "";
 
-  let totalAnnual = 0;
+  let grandTotal = 0;
 
-  for (const symbol in map) {
-    const data = map[symbol];
-    const annualDividend = data.shares * data.dividendPerShare;
-    totalAnnual += annualDividend;
-
+  sortedData.forEach(([symbol, data]) => {
     const row = document.createElement("div");
     row.className = "symbol-row";
-    row.innerText = `${symbol}: ${data.shares} shares → Annual Dividend $${annualDividend.toFixed(2)}`;
+    row.setAttribute("data-symbol", symbol); // CSS ::before shows symbol
+    row.innerHTML = `<span>Total $${data.total.toFixed(2)} from ${data.count} payments</span>`;
     container.appendChild(row);
-  }
-
-  const monthly = totalAnnual / 12;
-  const total = document.createElement("div");
-  total.className = "total";
-  total.innerText = `Total Annual Dividend: $${totalAnnual.toFixed(2)} | Monthly: $${monthly.toFixed(2)}`;
-  container.appendChild(total);
-}
-
-function renderSnowball(map) {
-  let totalAnnual = 0;
-  for (const symbol in map) {
-    totalAnnual += map[symbol].shares * map[symbol].dividendPerShare;
-  }
-
-  const monthly = totalAnnual / 12;
-  const months = [];
-  const cumulative = [];
-  let runningTotal = 0;
-
-  for (let i = 1; i <= 60; i++) {
-    runningTotal += monthly;
-    months.push("M" + i);
-    cumulative.push(runningTotal.toFixed(2));
-  }
-
-  const ctx = document.getElementById("snowballChart");
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: months,
-      datasets: [{
-        label: "Dividend Snowball ($)",
-        data: cumulative,
-        borderWidth: 3,
-        borderColor: "#2c3e50",
-        backgroundColor: "rgba(44,62,80,0.1)",
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: true } }
-    }
+    grandTotal += data.total;
   });
+
+  const totalDiv = document.createElement("div");
+  totalDiv.className = "total";
+  totalDiv.innerText = `Grand Total Dividends: $${grandTotal.toFixed(2)}`;
+  container.appendChild(totalDiv);
 }
