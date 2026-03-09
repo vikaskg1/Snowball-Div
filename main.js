@@ -1,4 +1,4 @@
-let addon, currentSort = { column: null, ascending: true };
+let addon, currentSort = { column: null, ascending: true }; 
 
 document.getElementById("applyFilter").addEventListener("click", loadDividendHistory);
 
