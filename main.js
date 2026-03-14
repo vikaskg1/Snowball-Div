@@ -60,6 +60,8 @@ async function loadDividendHistory() {
         dividendMap[symbol] = {
           total: 0,
           count: 0,
+          monthly: 0,
+          yesterday: 0,
         };
       }
       dividendMap[symbol].total += amount;
