@@ -126,7 +126,7 @@ function isYesterday(dateToCheck) {
   const d = new Date(dateToCheck);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  console("yesterday is --->", yesterday);
+  console.log("yesterday is --->", yesterday);
 
   return (
     d.getDate() === yesterday.getDate() &&
