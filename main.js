@@ -78,6 +78,9 @@ async function loadDividendHistory() {
 
     console.log("dividendMap -> ", dividendMap);
 
+    console.log("isYesterday", isYesterday("2026-03-06T00:00:00.000Z"));
+    console.log("isYesterday", isYesterday("2026-03-12T00:00:00.000Z"));
+
     for (const symbol in allPositionsMap) {
       const divData = dividendMap[symbol] || {
         monthly: 0,
