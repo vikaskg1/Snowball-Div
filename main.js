@@ -69,6 +69,7 @@ async function loadDividendHistory() {
       if (!heldSymbols.has(symbol)) {
         continue;
       }
+      console.log("tx is", tx);
       dividendMap[symbol].total += amount;
       if (isDateInThisMonth(tx.date)) {
         dividendMap[symbol].monthly += amount;
