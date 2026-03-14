@@ -44,8 +44,6 @@ addon.on("init", async (data) => {
 async function loadDividendHistory() {
   try {
     const transactions = await getDividendTransactions(addon);
-    console.log("transactions", transactions);
-
     if (transactions === 0) {
       document.getElementById("content").innerText =
         "No historical dividends found.";
@@ -65,13 +63,24 @@ async function loadDividendHistory() {
         };
       }
       dividendMap[symbol].total += amount;
+      if (isDateInThisMonth(tx.date)) {
+        dividendMap[symbol].monthly += amount;
+      }
+      if (isYesterday(tx.date)) {
+        dividendMap[symbol].yesterday += amount;
+      }
       dividendMap[symbol].count += 1;
     });
 
     const displayMap = {};
 
     for (const symbol in allPositionsMap) {
-      const divData = dividendMap[symbol] || { total: 0, count: 0 }; // Get { qty: 10, price: 150 }
+      const divData = dividendMap[symbol] || {
+        monthly: 0,
+        yesterday: 0,
+        total: 0,
+        count: 0,
+      }; // Get { qty: 10, price: 150 }
 
       // Go DIRECTLY to the same Symbol in your Dividend Map
       // No searching required!
@@ -98,6 +107,28 @@ async function loadDividendHistory() {
       "Error loading dividend history";
     console.error(err);
   }
+}
+
+function isYesterday(dateToCheck) {
+  const d = new Date(dateToCheck);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  return (
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear()
+  );
+}
+
+function isDateInThisMonth(dateToCheck) {
+  const inputDate = new Date(dateToCheck);
+  const now = new Date();
+
+  return (
+    inputDate.getFullYear() === now.getFullYear() &&
+    inputDate.getMonth() === now.getMonth()
+  );
 }
 
 function renderDividendTable() {
