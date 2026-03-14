@@ -52,18 +52,19 @@ async function loadDividendHistory() {
 
     const dividendMap = {};
 
+    heldSymbols.forEach((s) => {
+      dividendMap[s] = {
+        total: 0,
+        count: 0,
+        monthly: 0,
+        yesterday: 0,
+      };
+    });
+
     transactions.forEach((tx) => {
       const symbol = tx.symbol || tx.security?.symbol || "UNKNOWN";
       const amount = tx.amount || 0;
 
-      if (!dividendMap[symbol]) {
-        dividendMap[symbol] = {
-          total: 0,
-          count: 0,
-          monthly: 0,
-          yesterday: 0,
-        };
-      }
       dividendMap[symbol].total += amount;
       if (isDateInThisMonth(tx.date)) {
         dividendMap[symbol].monthly += amount;
