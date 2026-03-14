@@ -61,6 +61,7 @@ async function loadDividendHistory() {
       };
     });
 
+    console.log("dividendMap is", dividendMap);
     transactions.forEach((tx) => {
       const symbol = tx.symbol || tx.security?.symbol || "UNKNOWN";
       const amount = tx.amount || 0;
