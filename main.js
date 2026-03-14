@@ -44,6 +44,7 @@ addon.on("init", async (data) => {
 async function loadDividendHistory() {
   try {
     const transactions = await getDividendTransactions(addon);
+    console.log("transactions", transactions);
 
     if (transactions === 0) {
       document.getElementById("content").innerText =

@@ -62,6 +62,7 @@ async function getDividendTransactions(addon) {
       _id: t._id,
       symbol: t.symbol || t.security?.symbol || "UNKNOWN",
       amount: t.currency_amount || 0,
+      divDate: t.date,
     });
   }
 
