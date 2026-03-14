@@ -74,6 +74,8 @@ async function loadDividendHistory() {
 
     const displayMap = {};
 
+    console.log("dividendMap -> ", dividendMap);
+
     for (const symbol in allPositionsMap) {
       const divData = dividendMap[symbol] || {
         monthly: 0,
