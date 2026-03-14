@@ -123,23 +123,27 @@ async function loadDividendHistory() {
 
 function isYesterday(dateToCheck) {
   const d = new Date(dateToCheck);
+  const datePorttionToCheck = d.toISOString().slice(0, 10);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
+  const datePorttionYesterday = d.toISOString().slice(0, 10);
 
   return (
-    d.getDate() === yesterday.getDate() &&
-    d.getMonth() === yesterday.getMonth() &&
-    d.getFullYear() === yesterday.getFullYear()
+    datePorttionToCheck.getDate() === datePorttionYesterday.getDate() &&
+    datePorttionToCheck.getMonth() === datePorttionYesterday.getMonth() &&
+    datePorttionToCheck.getFullYear() === datePorttionYesterday.getFullYear()
   );
 }
 
 function isDateInThisMonth(dateToCheck) {
-  const inputDate = new Date(dateToCheck);
+  const d = new Date(dateToCheck);
+  const datePorttionToCheck = d.toISOString().slice(0, 10);
   const now = new Date();
+  const datePorttionToday = now.toISOString().slice(0, 10);
 
   return (
-    inputDate.getFullYear() === now.getFullYear() &&
-    inputDate.getMonth() === now.getMonth()
+    datePorttionToCheck.getMonth() === datePorttionToday.getMonth() &&
+    datePorttionToCheck.getFullYear() === datePorttionToday.getFullYear()
   );
 }
 
