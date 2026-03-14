@@ -122,6 +122,7 @@ async function loadDividendHistory() {
 }
 
 function isYesterday(dateToCheck) {
+  console.log("checking isYesterday(dateToCheck) ", dateToCheck);
   const d = new Date(dateToCheck);
   const datePorttionToCheck = d.toISOString().slice(0, 10);
   const yesterday = new Date();
@@ -136,6 +137,7 @@ function isYesterday(dateToCheck) {
 }
 
 function isDateInThisMonth(dateToCheck) {
+  console.log("checking isDateInThisMonth(dateToCheck) ", dateToCheck);
   const d = new Date(dateToCheck);
   const datePorttionToCheck = d.toISOString().slice(0, 10);
   const now = new Date();
